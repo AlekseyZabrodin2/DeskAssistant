@@ -8,15 +8,15 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="fa470c88-b81e-45e5-8b54-5c7559cc1d2a"
-    Publisher="CN=Забродин Алексей"
+    Name="90e87d77-4e7e-4943-aa79-5d42c3f93694"
+    Publisher="CN=zabrodin"
     Version="1.0.0.0" />
 
-  <mp:PhoneIdentity PhoneProductId="fa470c88-b81e-45e5-8b54-5c7559cc1d2a" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="90e87d77-4e7e-4943-aa79-5d42c3f93694" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>DeskAssistant</DisplayName>
-    <PublisherDisplayName>Забродин Алексей</PublisherDisplayName>
+    <PublisherDisplayName>zabrodin</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
