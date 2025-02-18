@@ -1,16 +1,31 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+	<WindowsSdkPackageVersion>10.0.26100.38</WindowsSdkPackageVersion>
     <RootNamespace>DeskAssistant</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x86;x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
-    <PublishProfile>win-$(Platform).pubxml</PublishProfile>
+	<PublishProfile>Properties\PublishProfiles\win-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
+	<ImplicitUsings>enable</ImplicitUsings>
+
+	<EnableMsixTooling>true</EnableMsixTooling>
+	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+	<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	<!--The SatelliteResourceLanguages ​​property lets you specify which languages ​​you want to preserve satellite resource assemblies for during build and publish.-->
+	<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+
+	<!--Set <WindowsPackageType>None</WindowsPackageType> in your project file. In advanced scenarios, if you want control over the initialization, you can call the bootstrapper API directly in your app's startup code-->
+	<!--<WindowsPackageType>None</WindowsPackageType>-->
+
+	<!--WinUI 3 doesn't need support for 'INotifyPropertyChanging', so we can disable it. This avoids all generated code for it and provides a small performance improvement.-->
+	<MvvmToolkitEnableINotifyPropertyChangingSupport>false</MvvmToolkitEnableINotifyPropertyChangingSupport>
   </PropertyGroup>
 
   <ItemGroup>
