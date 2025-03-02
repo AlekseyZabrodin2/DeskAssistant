@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using DeskAssistant.Models;
+using DeskAssistant.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.UI.Xaml.Controls;
@@ -55,7 +56,7 @@ namespace DeskAssistant.ViewModels
                 var currentPage = NamePagesCollection.FirstOrDefault(page => page.Tag == pageTag);
                 //PagePathToDll = currentPage.PathToDll;
 
-                //frame.Navigate(typeof(UniExpertPage));
+                frame.Navigate(typeof(BirthdayTrackerPage));
             }
         }
 

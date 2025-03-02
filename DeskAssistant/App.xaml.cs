@@ -53,7 +53,7 @@ namespace DeskAssistant
                 var hostBuilder = Host.CreateDefaultBuilder()
                     .ConfigureAppConfiguration((context, config) =>
                     {
-                        //config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/navigationSettings.json"));
+                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/navigationSettings.json"));
                         //config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "reportSettings.json"));
                         config.AddEnvironmentVariables();
                     })
@@ -65,6 +65,8 @@ namespace DeskAssistant
 
                         services.AddSingleton(this);
                         services.AddTransient<ShellPage>();
+                        services.AddTransient<BirthdayTrackerPage>();
+                        services.AddTransient<BirthdayTrackerViewModel>();
                         services.AddSingleton<ShellViewModel>();
                         services.AddTransient<NavigationPages>();
 
