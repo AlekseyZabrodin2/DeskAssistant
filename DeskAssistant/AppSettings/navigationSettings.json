@@ -1,0 +1,31 @@
+﻿{
+  "NavigationPages": {
+
+    "Page": {
+
+      "Title": "UniExpert",
+      "PathToDll": "D:\\Develop\\AutoTestRunner\\AutoTestRunnerWinUI\\AutoTestsDll\\UniExpertDll\\bin\\Debug\\net8.0-windows8.0\\Adani.Medicine.Modules.AutoTests.UniExpert.dll"
+    },
+    "Page1": {
+
+      "Title": "BagVision",
+      "PathToDll": "D:\\Develop\\BagVision\\Baggage.AutoTest.BagScan\\bin\\Debug\\net8.0-windows8.0\\Baggage.AutoTest.BagScan.dll"
+    },
+    "Page2": {
+
+      "Title": "BatteryScan",
+      "PathToDll": "D:\\Develop\\BatteryScanLast\\Sources\\Tests\\AutoTests\\BatteryScanAuto\\BatteryScanAuto\\bin\\Debug\\net8.0-windows\\BatteryScanAuto.dll"
+    },
+    "Page3": {
+
+      "Title": "BagScanLC",
+      "PathToDll": "D:\\Develop\\BagFlow\\BagScanLC\\AutoTests.BagScanLC\\bin\\Debug\\net8.0-windows\\AutoTests.BagScanLC.dll"
+    },
+    "Page4": {
+
+      "Title": "BatteryScan2222",
+      "PathToDll": "D:\\Develop\\AutoTestRunner\\AutoTestRunnerWinUI\\AutoTestsDll\\net9.0\\FaceId.Tests.dll"
+    }
+
+  }
+}
