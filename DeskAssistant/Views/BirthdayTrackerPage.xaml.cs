@@ -11,7 +11,6 @@ namespace DeskAssistant.Views
     /// </summary>
     public sealed partial class BirthdayTrackerPage : Page
     {
-
         public BirthdayTrackerViewModel ViewModel { get; }
 
         public BirthdayTrackerPage()

@@ -3,7 +3,7 @@
 
     "Page": {
 
-      "Title": "UniExpert",
+      "Title": "BirthdayTrackerPage",
       "PathToDll": "D:\\Develop\\AutoTestRunner\\AutoTestRunnerWinUI\\AutoTestsDll\\UniExpertDll\\bin\\Debug\\net8.0-windows8.0\\Adani.Medicine.Modules.AutoTests.UniExpert.dll"
     },
     "Page1": {

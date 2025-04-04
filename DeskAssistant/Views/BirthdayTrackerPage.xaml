@@ -5,14 +5,86 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:DeskAssistant.Views"
+    xmlns:convert="using:DeskAssistant.Converters"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:DeskAssistant.Models"
+    xmlns:table="using:WinUI.TableView"
+    xmlns:viewmodels="using:DeskAssistant.ViewModels"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-    
     mc:Ignorable="d">
 
+    <Page.Resources>
+        <convert:DateToShortConverter x:Key="DateToShortConverter"/>
+    </Page.Resources>
+
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-        <Button Content="dhjkhs" Command="{x:Bind ViewModel.ButtonClickCommand}" />
-
+        <Grid Grid.Row="1">
+            <ScrollView>
+                <table:TableView
+                    x:Name="tableView"
+                    AutoGenerateColumns="False"
+                    BorderThickness="0"
+                    CanFilterColumns="True"
+                    ItemsSource="{x:Bind ViewModel.BirthdayPeoples, Mode=OneWay}"
+                    SelectedItem=""
+                    SelectionMode="Extended"
+                    ShowExportOptions="True"
+                    ShowOptionsButton="True">
+                    <table:TableView.Resources>
+                        <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundColor" Color="Transparent" />
+                    </table:TableView.Resources>
+                    <table:TableView.Columns>
+                        <table:TableViewTextColumn
+                            Width="Auto"
+                            Binding="{Binding Id}"
+                            Header="ID" />
+                        <table:TableViewTextColumn
+                            Width="0.2*"
+                            Binding="{Binding LastName}"
+                            Header="Last Name" />
+                        <table:TableViewTextColumn
+                            Width="0.2*"
+                            Binding="{Binding Name}"
+                            Header="Name" />
+                        <table:TableViewTextColumn
+                            Width="0.2*"
+                            Binding="{Binding MiddleName}"
+                            Header="Middle Name" />
+                        <table:TableViewTextColumn
+                            Width="0.1*"
+                            Binding="{Binding BirthdayFormatted, Converter={StaticResource DateToShortConverter}}"
+                            Header="Birthday" />
+                        <table:TableViewTextColumn
+                            Width="Auto"
+                            Binding="{Binding Email}"
+                            Header="Email" />
+                    </table:TableView.Columns>
+                </table:TableView>
+            </ScrollView>
+        </Grid>
+        <Grid Grid.Row="2">
+            <StackPanel
+                Margin="20"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                Orientation="Horizontal"
+                Spacing="50">
+                <Button
+                    Width="150"
+                    Height="50"
+                    Command="{Binding SendEmailCommand}"
+                    Content="Update" />
+                <Button
+                    Width="150"
+                    Height="50"
+                    Content="Update" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Page>

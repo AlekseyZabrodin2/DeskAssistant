@@ -1,4 +1,5 @@
-﻿using DeskAssistant.Models;
+﻿using DeskAssistant.Data;
+using DeskAssistant.Models;
 using DeskAssistant.Services;
 using DeskAssistant.ViewModels;
 using DeskAssistant.Views;
@@ -6,8 +7,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.UI.Xaml;
 using NLog.Extensions.Logging;
+using System;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -23,8 +26,12 @@ namespace DeskAssistant
         private readonly NLog.ILogger _logger = NLog.LogManager.GetCurrentClassLogger();
         public static Window MainWindow = new MainWindow();
 
+
+        public EmailSettings EmailSettings { get; set; }
         public static UIElement? AppTitlebar { get; set; }
         private UIElement? _shell = null;
+        public EmailService _emailService;
+
 
         public static T GetService<T>()
         where T : class
@@ -54,6 +61,7 @@ namespace DeskAssistant
                     .ConfigureAppConfiguration((context, config) =>
                     {
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/navigationSettings.json"));
+                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "emailServiceSettings.json"));
                         //config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "reportSettings.json"));
                         config.AddEnvironmentVariables();
                     })
@@ -69,8 +77,12 @@ namespace DeskAssistant
                         services.AddTransient<BirthdayTrackerViewModel>();
                         services.AddSingleton<ShellViewModel>();
                         services.AddTransient<NavigationPages>();
+                        services.AddTransient<EmailService>();
 
+                        services.Configure<EmailSettings>(configuration.GetSection(nameof(EmailSettings)));
                         services.Configure<NavigationPages>(context.Configuration.GetSection("NavigationPages"));
+
+                        IServiceProvider serviceProvider = services.BuildServiceProvider();
 
                     })
                     .ConfigureLogging((context, logging) =>
@@ -80,6 +92,11 @@ namespace DeskAssistant
                     });
 
                 _host = hostBuilder.Build();
+
+                var optionsSnapshot = _host.Services.GetRequiredService<IOptionsSnapshot<EmailSettings>>();
+                EmailSettings = optionsSnapshot.Value;
+
+                _emailService = _host.Services.GetRequiredService<EmailService>();
 
                 _logger.Trace("App is loaded");
             }

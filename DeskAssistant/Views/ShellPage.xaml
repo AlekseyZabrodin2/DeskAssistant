@@ -45,7 +45,10 @@
 
             </NavigationView.MenuItemTemplate>
 
-            <Frame x:Name="contentFrame" />
+            <Grid Margin="5,45,5,1">
+                <Frame x:Name="contentFrame" />
+            </Grid>
+
 
         </NavigationView>
     </Grid>
