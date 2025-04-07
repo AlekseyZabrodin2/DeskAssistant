@@ -20,12 +20,10 @@ namespace DeskAssistant.Services
             _emailSettings = options.Value;
         }
 
-        public bool SendEmail(string mailSubscriberTo, string emailIdTo, string emailSubject, string emailTextBody)
+        public bool SendEmail(List<(string nameTo, string emailTo)> addresseeTo, string emailSubject, string emailTextBody)
         {
             string mailSubscriberFrom = _encryptionHelper.Decrypt(_emailSettings.Name);
             string emailIdFrom = _encryptionHelper.Decrypt(_emailSettings.EmailId);
-            //string mailSubscriberTo = "Alex Gulevich";  //_encryptionHelper.Decrypt(_emailSettings.Name);
-            //string emailIdTo = "gulevich@advin-group.com";  //_encryptionHelper.Decrypt(_emailSettings.EmailId);
             string decryptedUserName = _encryptionHelper.Decrypt(_emailSettings.Username);
             string decryptedPassword = _encryptionHelper.Decrypt(_emailSettings.Password);
 
@@ -33,11 +31,12 @@ namespace DeskAssistant.Services
             {
                 MimeMessage emailMessage = new MimeMessage();
 
-                MailboxAddress emailFrom = new MailboxAddress(mailSubscriberFrom, emailIdFrom);
-                emailMessage.From.Add(emailFrom);
+                emailMessage.From.Add(new MailboxAddress(mailSubscriberFrom, emailIdFrom));
 
-                MailboxAddress emailTo = new MailboxAddress(mailSubscriberTo, emailIdTo);
-                emailMessage.To.Add(emailTo);
+                foreach (var person in addresseeTo)
+                {
+                    emailMessage.To.Add(new MailboxAddress(person.nameTo, person.emailTo));
+                }
 
                 emailMessage.Subject = emailSubject;
 

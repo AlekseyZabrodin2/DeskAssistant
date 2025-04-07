@@ -22,6 +22,8 @@ namespace DeskAssistant.Models
 
         public DateTime BirthdayFormatted => new (Birthday.Year, Birthday.Month, Birthday.Day);
 
+        public bool IsBirthdayThisMonth {  get; set; }
+
         public string Email { get; set; }
 
     }
