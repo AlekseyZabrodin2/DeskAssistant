@@ -33,7 +33,6 @@
                     BorderThickness="0"
                     CanFilterColumns="True"
                     ItemsSource="{x:Bind ViewModel.BirthdayPeoples, Mode=OneWay}"
-                    SelectedItem=""
                     SelectionMode="Extended"
                     ShowExportOptions="True"
                     ShowOptionsButton="True">
