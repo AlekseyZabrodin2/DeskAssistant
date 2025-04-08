@@ -36,9 +36,8 @@ namespace DeskAssistant.ViewModels
 
         public void Initialize()
         {
-            string imagePath = @"D:\\Develop\\Tesseract\\Tesseract\\image\\SpisokORPK.docx";
-
-            ReadTextFromDocx(imagePath);
+            string filePath = "Data\\SpisokORPK.docx";
+            ReadTextFromDocx(Path.Combine(AppContext.BaseDirectory, filePath));
 
             GetPeoplesWithBirthdayInMonth();
         }

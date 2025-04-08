@@ -1,5 +1,4 @@
-﻿using DeskAssistant.Data;
-using DeskAssistant.Models;
+﻿using DeskAssistant.Models;
 using DeskAssistant.Services;
 using DeskAssistant.ViewModels;
 using DeskAssistant.Views;
@@ -10,7 +9,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.UI.Xaml;
 using NLog.Extensions.Logging;
-using System;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
