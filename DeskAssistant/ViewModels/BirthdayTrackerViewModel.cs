@@ -2,7 +2,6 @@
 using CommunityToolkit.Mvvm.Input;
 using DeskAssistant.Models;
 using DeskAssistant.Services;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,9 +13,9 @@ namespace DeskAssistant.ViewModels
     {
 
         public EmailService _emailService;
-
         IServiceProvider _serviceProvider;
         public BirthdayMessages _birthdayMessages = new();
+
 
         public BirthdayTrackerViewModel(IServiceProvider serviceProvider)
         {
@@ -26,9 +25,12 @@ namespace DeskAssistant.ViewModels
             Initialize();
         }
 
+
         public ObservableCollection<BirthdayPeopleModel> BirthdayPeoples { get; set; }
 
         public ObservableCollection<BirthdayPeopleModel> PeoplesWithBirthday { get; set; }
+
+        public BirthdayPeopleModel PeopleNextBirthday { get; set; }
 
         public List<(string Name, string Address)> AllAddressees { get; set; }
 
@@ -42,34 +44,6 @@ namespace DeskAssistant.ViewModels
             GetPeoplesWithBirthdayInMonth();
         }
 
-
-
-        [RelayCommand]
-        private void SendEmail()
-        {
-            var recipientsList = GetAddresseesList();
-
-            SendMessagesRecipientsWithoutBirthday(recipientsList);
-        }
-
-        public void SendMessagesRecipientsWithoutBirthday(List<(string Name, string Address)> recipientsList)
-        {
-
-            foreach (var personWithBirthday in PeoplesWithBirthday)
-            {
-                var recipientName = $"{personWithBirthday.LastName} {personWithBirthday.Name}";
-
-                var recipients = recipientsList.Where(p => p.Name != recipientName).ToList();
-
-                var subject = "Напоминание о дне рождения 🎉";
-                var messageBody = _birthdayMessages.GetRandomMessage(personWithBirthday.Name, personWithBirthday.LastName, personWithBirthday.Birthday);
-
-                if (recipients.Any())
-                    _emailService.SendEmail(recipients, subject, messageBody);
-            }
-        }
-
-
         public void ReadTextFromDocx(string filePath)
         {
             using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(filePath, false))
@@ -80,7 +54,7 @@ namespace DeskAssistant.ViewModels
                     .Select(p => p.InnerText.Trim())
                     .ToList();
 
-                 GetBirthdayPeoples(textList);
+                GetBirthdayPeoples(textList);
             }
         }
 
@@ -118,7 +92,6 @@ namespace DeskAssistant.ViewModels
             return BirthdayPeoples;
         }
 
-
         public List<(string Name, string Address)> GetAddresseesList()
         {
             var allAddressees = new List<(string Name, string Address)>();
@@ -142,7 +115,7 @@ namespace DeskAssistant.ViewModels
             var today = DateTime.Today;
 
 
-            /// Get 1 Birthday People
+            /// Get 1 Birthday People today
 
             //var peoples = BirthdayPeoples
             //    .Where(p => p.Birthday.Month == today.Month && p.Birthday.Day == today.Day)
@@ -176,6 +149,81 @@ namespace DeskAssistant.ViewModels
             return PeoplesWithBirthday;
         }
 
+        public BirthdayPeopleModel GetPersonWithNextBirthday()
+        {
+            var peoplesWithBirthday = new ObservableCollection<BirthdayPeopleModel>();
+            var today = DateTime.Today;
+
+            var person = BirthdayPeoples
+                .Where(p => p.Birthday.Month == today.Month && p.Birthday.Day >= today.Day)
+                .OrderBy(p => p.Birthday.Day)
+                .First();
+
+            PeopleNextBirthday = new()
+            {
+                Id = 1,
+                LastName = person.LastName,
+                Name = person.Name,
+                MiddleName = person.MiddleName,
+                Birthday = person.Birthday,
+                IsBirthdayThisMonth = true,
+                Email = person.Email
+            };
+
+            return PeopleNextBirthday;
+        }
+
+
+
+
+        [RelayCommand]
+        private void SendEmailAboutAllBirthdays()
+        {
+            var recipientsList = GetAddresseesList();
+
+            SendMessagesRecipientsWithoutBirthday(recipientsList);
+        }
+
+        public void SendMessagesRecipientsWithoutBirthday(List<(string Name, string Address)> recipientsList)
+        {
+
+            foreach (var personWithBirthday in PeoplesWithBirthday)
+            {
+                var recipientName = $"{personWithBirthday.LastName} {personWithBirthday.Name}";
+
+                var recipients = recipientsList.Where(p => p.Name != recipientName).ToList();
+
+                var subject = "Напоминание о дне рождения 🎉";
+                var messageBody = _birthdayMessages.GetRandomMessage(personWithBirthday.Name, personWithBirthday.LastName, personWithBirthday.Birthday);
+
+                if (recipients.Any())
+                    _emailService.SendEmail(recipients, subject, messageBody);
+            }
+        }
+
+
+        [RelayCommand]
+        private void SendEmailAboutNextBirthday()
+        {
+            var recipientsList = GetAddresseesList();
+            GetPersonWithNextBirthday();
+
+            SendEmailRecipientsAboutNextBirthday(recipientsList);
+        }
+
+        private void SendEmailRecipientsAboutNextBirthday(List<(string Name, string Address)> recipientsList)
+        {
+            var recipientName = $"{PeopleNextBirthday.LastName} {PeopleNextBirthday.Name}";
+
+            var recipients = recipientsList.Where(p => p.Name != recipientName).ToList();
+
+            var subject = "Напоминание о дне рождения 🎉";
+            var messageBody = _birthdayMessages.GetRandomMessage(PeopleNextBirthday.Name, PeopleNextBirthday.LastName, PeopleNextBirthday.Birthday);
+            var finalMessage = $"{messageBody}" + "\r\nПодходите поздравляйте, не стесняйтесь";
+
+            if (recipients.Any())
+                _emailService.SendEmail(recipients, subject, finalMessage);
+        }
 
 
     }

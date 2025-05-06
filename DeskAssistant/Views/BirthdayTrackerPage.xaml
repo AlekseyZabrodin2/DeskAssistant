@@ -10,6 +10,7 @@
     xmlns:models="using:DeskAssistant.Models"
     xmlns:table="using:WinUI.TableView"
     xmlns:viewmodels="using:DeskAssistant.ViewModels"
+    d:DataContext="{d:DesignInstance viewmodels:BirthdayTrackerViewModel}"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     mc:Ignorable="d">
 
@@ -78,12 +79,20 @@
                 <Button
                     Width="150"
                     Height="50"
-                    Command="{Binding SendEmailCommand}"
-                    Content="Send Email" />
+                    Command="{Binding SendEmailAboutAllBirthdaysCommand}">
+                    <TextBlock HorizontalTextAlignment="Center" TextWrapping="Wrap">
+                        Email about<LineBreak />
+                        All Birthdays</TextBlock>
+                </Button>
                 <Button
                     Width="150"
                     Height="50"
-                    Content="Update" />
+                    Command="{Binding SendEmailAboutNextBirthdayCommand}">
+                    <TextBlock HorizontalTextAlignment="Center" TextWrapping="Wrap">
+                        Email about<LineBreak />
+                        next Birthdays</TextBlock>
+                </Button>
+
             </StackPanel>
         </Grid>
     </Grid>
