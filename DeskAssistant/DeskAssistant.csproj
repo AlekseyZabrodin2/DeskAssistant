@@ -74,7 +74,7 @@
     <None Update="Data\SpisokORPK.docx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="emailServiceSettings.json">
+    <None Update="Data\emailServiceSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Page Update="Views\BirthdayTrackerPage.xaml">
@@ -85,9 +85,6 @@
     <Page Update="Views\ShellPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Data\" />
   </ItemGroup>
 
   <!--

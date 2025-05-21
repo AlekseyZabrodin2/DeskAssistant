@@ -59,7 +59,7 @@ namespace DeskAssistant
                     .ConfigureAppConfiguration((context, config) =>
                     {
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/navigationSettings.json"));
-                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "emailServiceSettings.json"));
+                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "Data/emailServiceSettings.json"));
                         //config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "reportSettings.json"));
                         config.AddEnvironmentVariables();
                     })
