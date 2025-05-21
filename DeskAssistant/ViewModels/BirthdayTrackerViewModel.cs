@@ -5,6 +5,7 @@ using DeskAssistant.Services;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml.Controls;
 using System.Collections.ObjectModel;
 
 namespace DeskAssistant.ViewModels
@@ -151,24 +152,29 @@ namespace DeskAssistant.ViewModels
 
         public BirthdayPeopleModel GetPersonWithNextBirthday()
         {
-            var peoplesWithBirthday = new ObservableCollection<BirthdayPeopleModel>();
             var today = DateTime.Today;
 
-            var person = BirthdayPeoples
+            if (BirthdayPeoples.Any())
+            {
+                var person = BirthdayPeoples
                 .Where(p => p.Birthday.Month == today.Month && p.Birthday.Day >= today.Day)
                 .OrderBy(p => p.Birthday.Day)
-                .First();
+                .FirstOrDefault();
 
-            PeopleNextBirthday = new()
-            {
-                Id = 1,
-                LastName = person.LastName,
-                Name = person.Name,
-                MiddleName = person.MiddleName,
-                Birthday = person.Birthday,
-                IsBirthdayThisMonth = true,
-                Email = person.Email
-            };
+                if (person == null)
+                    return null;
+
+                PeopleNextBirthday = new()
+                {
+                    Id = 1,
+                    LastName = person.LastName,
+                    Name = person.Name,
+                    MiddleName = person.MiddleName,
+                    Birthday = person.Birthday,
+                    IsBirthdayThisMonth = true,
+                    Email = person.Email
+                };
+            }
 
             return PeopleNextBirthday;
         }
@@ -177,52 +183,83 @@ namespace DeskAssistant.ViewModels
 
 
         [RelayCommand]
-        private void SendEmailAboutAllBirthdays()
+        private async Task SendEmailAboutAllBirthdays()
         {
             var recipientsList = GetAddresseesList();
 
-            SendMessagesRecipientsWithoutBirthday(recipientsList);
+            await SendMessagesRecipientsWithoutBirthday(recipientsList);
         }
 
-        public void SendMessagesRecipientsWithoutBirthday(List<(string Name, string Address)> recipientsList)
+        public async Task SendMessagesRecipientsWithoutBirthday(List<(string Name, string Address)> recipientsList)
         {
-
-            foreach (var personWithBirthday in PeoplesWithBirthday)
+            if (PeoplesWithBirthday.Any())
             {
-                var recipientName = $"{personWithBirthday.LastName} {personWithBirthday.Name}";
+                foreach (var personWithBirthday in PeoplesWithBirthday)
+                {
+                    var recipientName = $"{personWithBirthday.LastName} {personWithBirthday.Name}";
 
-                var recipients = recipientsList.Where(p => p.Name != recipientName).ToList();
+                    var recipients = recipientsList.Where(p => p.Name != recipientName).ToList();
 
-                var subject = "Напоминание о дне рождения 🎉";
-                var messageBody = _birthdayMessages.GetRandomMessage(personWithBirthday.Name, personWithBirthday.LastName, personWithBirthday.Birthday);
+                    var subject = "Напоминание о дне рождения 🎉";
+                    var messageBody = _birthdayMessages.GetRandomMessage(personWithBirthday.Name, personWithBirthday.LastName, personWithBirthday.Birthday);
 
-                if (recipients.Any())
-                    _emailService.SendEmail(recipients, subject, messageBody);
+                    if (recipients.Any())
+                        _emailService.SendEmail(recipients, subject, messageBody);
+                }
+            }
+            else
+            {
+                var dialog = new ContentDialog
+                {
+                    XamlRoot = App.MainWindow.Content.XamlRoot,
+                    Title = "Нет именинников",
+                    Content = "В этом месяце больше никто не празднует день рождения.",
+                    CloseButtonText = "ОК"
+
+                };
+
+                await dialog.ShowAsync();
             }
         }
 
 
         [RelayCommand]
-        private void SendEmailAboutNextBirthday()
+        private async Task SendEmailAboutNextBirthday()
         {
             var recipientsList = GetAddresseesList();
             GetPersonWithNextBirthday();
 
-            SendEmailRecipientsAboutNextBirthday(recipientsList);
+            await SendEmailRecipientsAboutNextBirthday(recipientsList);
         }
 
-        private void SendEmailRecipientsAboutNextBirthday(List<(string Name, string Address)> recipientsList)
+        private async Task SendEmailRecipientsAboutNextBirthday(List<(string Name, string Address)> recipientsList)
         {
-            var recipientName = $"{PeopleNextBirthday.LastName} {PeopleNextBirthday.Name}";
+            if (PeopleNextBirthday != null)
+            {
+                var recipientName = $"{PeopleNextBirthday.LastName} {PeopleNextBirthday.Name}";
 
-            var recipients = recipientsList.Where(p => p.Name != recipientName).ToList();
+                var recipients = recipientsList.Where(p => p.Name != recipientName).ToList();
 
-            var subject = "Напоминание о дне рождения 🎉";
-            var messageBody = _birthdayMessages.GetRandomMessage(PeopleNextBirthday.Name, PeopleNextBirthday.LastName, PeopleNextBirthday.Birthday);
-            var finalMessage = $"{messageBody}" + "\r\nПодходите поздравляйте, не стесняйтесь";
+                var subject = "Напоминание о дне рождения 🎉";
+                var messageBody = _birthdayMessages.GetRandomMessage(PeopleNextBirthday.Name, PeopleNextBirthday.LastName, PeopleNextBirthday.Birthday);
+                var finalMessage = $"{messageBody}" + "\r\nПодходите поздравляйте, не стесняйтесь";
 
-            if (recipients.Any())
-                _emailService.SendEmail(recipients, subject, finalMessage);
+                if (recipients.Any())
+                    _emailService.SendEmail(recipients, subject, finalMessage);
+            }
+            else
+            {
+                var dialog = new ContentDialog
+                {
+                    XamlRoot = App.MainWindow.Content.XamlRoot,
+                    Title = "Нет именинников",
+                    Content = "В этом месяце больше никто не празднует день рождения.",
+                    CloseButtonText = "ОК"
+
+                };
+
+                await dialog.ShowAsync();
+            }
         }
 
 
