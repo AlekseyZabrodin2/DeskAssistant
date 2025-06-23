@@ -22,7 +22,6 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Dd]ata/
-[Ss]ecureService/
 
 # Visual Studio 2015 cache/options directory
 .vs/
@@ -261,3 +260,7 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+
+# Ignore for UserSecrets documents
+**/secrets.json
+**/UserSecrets/
