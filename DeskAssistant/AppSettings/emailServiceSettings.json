@@ -1,0 +1,11 @@
+﻿{
+  "EmailSettings": {
+    "EmailId": "EmailId_dev",
+    "Name": "Name_dev",
+    "Host": "Host_dev",
+    "Port": 0,
+    "UseTLS": "false",
+    "UserName": "UserName_dev",
+    "Password": "Password_dev"
+  }
+}
