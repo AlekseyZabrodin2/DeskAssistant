@@ -65,8 +65,9 @@ namespace DeskAssistant
 
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/navigationSettings.json"));
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/emailServiceSettings.json"));
-                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/encryptionSettings.json"));         
+                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/encryptionSettings.json"));
 
+                        // add UserSecrets when Development
                         if (env.IsDevelopment())
                         {
                             config.AddUserSecrets<App>();
