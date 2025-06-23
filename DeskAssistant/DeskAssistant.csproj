@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.26100.0</TargetFramework>
@@ -27,6 +27,7 @@
 
 	<!--WinUI 3 doesn't need support for 'INotifyPropertyChanging', so we can disable it. This avoids all generated code for it and provides a small performance improvement.-->
 	<MvvmToolkitEnableINotifyPropertyChangingSupport>false</MvvmToolkitEnableINotifyPropertyChangingSupport>
+    <UserSecretsId>effbeea8-b5d6-4fc4-8e25-47d11d456b9f</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Views\BirthdayTrackerPage.xaml" />
@@ -68,13 +69,16 @@
     <PackageReference Include="WinUI.TableView" Version="1.2.2" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="AppSettings\encryptionSettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="AppSettings\navigationSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Data\SpisokORPK.docx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Data\emailServiceSettings.json">
+    <None Update="AppSettings\emailServiceSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Page Update="Views\BirthdayTrackerPage.xaml">

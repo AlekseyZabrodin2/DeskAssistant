@@ -1,4 +1,5 @@
 ﻿using DeskAssistant.Models;
+using DeskAssistant.SecureService;
 using DeskAssistant.Services;
 using DeskAssistant.ViewModels;
 using DeskAssistant.Views;
@@ -26,9 +27,11 @@ namespace DeskAssistant
 
 
         public EmailSettings EmailSettings { get; set; }
+        public EncryptionSettings EncryptionSettings { get; set; }
         public static UIElement? AppTitlebar { get; set; }
         private UIElement? _shell = null;
         public EmailService _emailService;
+        public EncryptionHelper _encryptionHelper;
 
 
         public static T GetService<T>()
@@ -58,9 +61,17 @@ namespace DeskAssistant
                 var hostBuilder = Host.CreateDefaultBuilder()
                     .ConfigureAppConfiguration((context, config) =>
                     {
+                        var env = context.HostingEnvironment;
+
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/navigationSettings.json"));
-                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "Data/emailServiceSettings.json"));
-                        //config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "reportSettings.json"));
+                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/emailServiceSettings.json"));
+                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/encryptionSettings.json"));         
+
+                        if (env.IsDevelopment())
+                        {
+                            config.AddUserSecrets<App>();
+                        }
+
                         config.AddEnvironmentVariables();
                     })
                     .ConfigureServices((context, services) =>
@@ -76,8 +87,10 @@ namespace DeskAssistant
                         services.AddSingleton<ShellViewModel>();
                         services.AddTransient<NavigationPages>();
                         services.AddTransient<EmailService>();
+                        services.AddTransient<EncryptionHelper>();
 
                         services.Configure<EmailSettings>(configuration.GetSection(nameof(EmailSettings)));
+                        services.Configure<EncryptionSettings>(configuration.GetSection(nameof(EncryptionSettings)));
                         services.Configure<NavigationPages>(context.Configuration.GetSection("NavigationPages"));
 
                         IServiceProvider serviceProvider = services.BuildServiceProvider();
@@ -88,13 +101,13 @@ namespace DeskAssistant
                         logging.ClearProviders();
                         logging.AddNLog();
                     });
-
+                                
                 _host = hostBuilder.Build();
 
-                var optionsSnapshot = _host.Services.GetRequiredService<IOptionsSnapshot<EmailSettings>>();
-                EmailSettings = optionsSnapshot.Value;
-
-                _emailService = _host.Services.GetRequiredService<EmailService>();
+                //var options = _host.Services.GetRequiredService<IOptions<EmailSettings>>();
+                //EmailSettings = options.Value;
+                //_emailService = _host.Services.GetRequiredService<EmailService>();
+                //_encryptionHelper = _host.Services.GetRequiredService<EncryptionHelper>();
 
                 _logger.Trace("App is loaded");
             }
