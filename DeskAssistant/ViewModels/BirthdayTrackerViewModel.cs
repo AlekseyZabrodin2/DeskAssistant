@@ -204,7 +204,7 @@ namespace DeskAssistant.ViewModels
                     var messageBody = _birthdayMessages.GetRandomMessage(personWithBirthday.Name, personWithBirthday.LastName, personWithBirthday.Birthday);
 
                     if (recipients.Any())
-                        _emailService.SendEmail(recipients, subject, messageBody);
+                        await _emailService.SendEmailAsync(recipients, subject, messageBody);
                 }
             }
             else
@@ -245,7 +245,7 @@ namespace DeskAssistant.ViewModels
                 var finalMessage = $"{messageBody}" + "\r\nПодходите поздравляйте, не стесняйтесь";
 
                 if (recipients.Any())
-                    _emailService.SendEmail(recipients, subject, finalMessage);
+                    await _emailService.SendEmailAsync(recipients, subject, finalMessage);
             }
             else
             {

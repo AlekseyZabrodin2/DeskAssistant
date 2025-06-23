@@ -11,15 +11,15 @@ namespace DeskAssistant.Services
     {
         private readonly EmailSettings _emailSettings = null;
         private static readonly ILogger _logger = LogManager.GetCurrentClassLogger();
-        private SecureSocketOptions _secureSocketOptions = SecureSocketOptions.StartTls;
-        private EncryptionHelper _encryptionHelper = new();
+        private EncryptionHelper _encryptionHelper;
 
-        public EmailService(IOptions<EmailSettings> options)
+        public EmailService(IOptions<EmailSettings> options, EncryptionHelper encryptionHelper)
         {
             _emailSettings = options.Value;
+            _encryptionHelper = encryptionHelper;
         }
 
-        public bool SendEmail(List<(string nameTo, string emailTo)> addresseeTo, string emailSubject, string emailTextBody)
+        public async Task<bool> SendEmailAsync(List<(string nameTo, string emailTo)> addresseeTo, string emailSubject, string emailTextBody)
         {
             string mailSubscriberFrom = _encryptionHelper.Decrypt(_emailSettings.Name);
             string emailIdFrom = _encryptionHelper.Decrypt(_emailSettings.EmailId);
@@ -46,13 +46,12 @@ namespace DeskAssistant.Services
 
                 emailMessage.Body = emailBodyBuilder.ToMessageBody();
 
-                SmtpClient emailClient = new SmtpClient();
+                using var emailClient = new SmtpClient();
 
-                emailClient.Connect(_emailSettings.Host, _emailSettings.Port, _emailSettings.UseTLS);
-                emailClient.Authenticate(decryptedUserName, decryptedPassword);
-                emailClient.Send(emailMessage);
-                emailClient.Disconnect(true);
-                emailClient.Dispose();
+                await emailClient.ConnectAsync(_emailSettings.Host, _emailSettings.Port, _emailSettings.UseTLS);
+                await emailClient.AuthenticateAsync(decryptedUserName, decryptedPassword);
+                await emailClient.SendAsync(emailMessage);
+                await emailClient.DisconnectAsync(true);
 
                 _logger.Info("The email has been sent");
                 return true;
