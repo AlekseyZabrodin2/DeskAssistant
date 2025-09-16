@@ -3,8 +3,10 @@ using CommunityToolkit.Mvvm.Input;
 using DeskAssistant.Models;
 using DeskAssistant.Services;
 using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Vml.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Collections.ObjectModel;
 
@@ -35,6 +37,14 @@ namespace DeskAssistant.ViewModels
 
         public List<(string Name, string Address)> AllAddressees { get; set; }
 
+        [ObservableProperty]
+        public partial bool ProgressRingIsActive { get; set; }
+
+        [ObservableProperty]
+        public partial bool HitVisible { get; set; }
+
+        [ObservableProperty]
+        public partial Visibility GridVisible { get; set; }
 
 
         public void Initialize()
@@ -43,6 +53,8 @@ namespace DeskAssistant.ViewModels
             ReadTextFromDocx(Path.Combine(AppContext.BaseDirectory, filePath));
 
             GetPeoplesWithBirthdayInMonth();
+
+            StopBlurEffect();
         }
 
         public void ReadTextFromDocx(string filePath)
@@ -204,7 +216,11 @@ namespace DeskAssistant.ViewModels
                     var messageBody = _birthdayMessages.GetRandomMessage(personWithBirthday.Name, personWithBirthday.LastName, personWithBirthday.Birthday);
 
                     if (recipients.Any())
+                    {
+                        StartBlurEffect();
                         await _emailService.SendEmailAsync(recipients, subject, messageBody);
+                        StopBlurEffect();
+                    }                        
                 }
             }
             else
@@ -245,7 +261,11 @@ namespace DeskAssistant.ViewModels
                 var finalMessage = $"{messageBody}" + "\r\nПодходите поздравляйте, не стесняйтесь";
 
                 if (recipients.Any())
+                {
+                    StartBlurEffect();
                     await _emailService.SendEmailAsync(recipients, subject, finalMessage);
+                    StopBlurEffect();
+                }
             }
             else
             {
@@ -262,6 +282,18 @@ namespace DeskAssistant.ViewModels
             }
         }
 
+        private void StartBlurEffect()
+        {
+            ProgressRingIsActive = true;
+            HitVisible = false;
+            GridVisible = Visibility.Visible;
+        }
 
+        private void StopBlurEffect()
+        {
+            HitVisible = true;
+            GridVisible = Visibility.Collapsed;
+            ProgressRingIsActive = false;
+        }
     }
 }

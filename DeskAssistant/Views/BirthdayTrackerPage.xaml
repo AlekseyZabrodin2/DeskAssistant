@@ -19,12 +19,18 @@
         <convert:BirthdayHighlightConverter x:Key="BirthdayHighlightConverter" />
     </Page.Resources>
 
-    <Grid>
+    <Grid IsHitTestVisible="{Binding HitVisible}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
+
+        <Grid Grid.RowSpan="3" Visibility="{Binding GridVisible}">
+            <Grid.Background>
+                <AcrylicBrush TintColor="White" TintOpacity="0.7" />
+            </Grid.Background>
+        </Grid>
 
         <Grid Grid.Row="1">
             <ScrollView>
@@ -68,6 +74,10 @@
                     </table:TableView.Columns>
                 </table:TableView>
             </ScrollView>
+            <ProgressRing
+                Width="150"
+                Height="150"
+                IsActive="{Binding ProgressRingIsActive}" />
         </Grid>
         <Grid Grid.Row="2">
             <StackPanel
