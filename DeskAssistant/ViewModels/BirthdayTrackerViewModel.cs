@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using DeskAssistant.Models;
 using DeskAssistant.Services;
 using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Vml.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;

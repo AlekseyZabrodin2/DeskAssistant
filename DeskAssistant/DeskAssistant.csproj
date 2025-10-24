@@ -31,6 +31,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Views\BirthdayTrackerPage.xaml" />
+    <None Remove="Views\CalendarPage.xaml" />
     <None Remove="Views\ShellPage.xaml" />
   </ItemGroup>
 
@@ -81,6 +82,9 @@
     <None Update="AppSettings\emailServiceSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Page Update="Views\CalendarPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Update="Views\BirthdayTrackerPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
