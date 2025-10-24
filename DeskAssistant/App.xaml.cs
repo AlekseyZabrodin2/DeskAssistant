@@ -85,6 +85,8 @@ namespace DeskAssistant
                         services.AddTransient<ShellPage>();
                         services.AddTransient<BirthdayTrackerPage>();
                         services.AddTransient<BirthdayTrackerViewModel>();
+                        services.AddTransient<CalendarPage>();
+                        services.AddTransient<CalendarViewModel>();
                         services.AddSingleton<ShellViewModel>();
                         services.AddTransient<NavigationPages>();
                         services.AddTransient<EmailService>();

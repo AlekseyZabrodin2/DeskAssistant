@@ -45,6 +45,10 @@ namespace DeskAssistant.ViewModels
             {
                 //frame.Navigate(typeof(SettingsPage));
             }
+            else if (pageTag == "CalendarPage")
+            {
+                frame.Navigate(typeof(CalendarPage));
+            }
             else
             {
                 var currentPage = NamePagesCollection.FirstOrDefault(page => page.Tag == pageTag);

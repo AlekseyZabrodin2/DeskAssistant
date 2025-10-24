@@ -2,8 +2,10 @@
   "NavigationPages": {
 
     "Page": {
-
-      "Title": "Birthday Tracker Page",
+      "Title": "Calendar"
+    },
+    "Page1": {
+      "Title": "Birthday Tracker",
       "PathToDll": "Some address"
     }
   }
