@@ -12,17 +12,26 @@
     mc:Ignorable="d">
 
     <Grid>
-        <StackPanel>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
+        <Border BorderBrush="White" BorderThickness="1">
+            <StackPanel Orientation="Vertical">
+                <CalendarView
+                    Width="600"
+                    FirstDayOfWeek="Monday"
+                    Language="ru-Ru" />
+                <ListView />
 
-            <Button
-                Width="180"
-                Height="50"
-                Content="Test Button" />
-
-            <CalendarView />
-
-
-        </StackPanel>
+            </StackPanel>
+        </Border>
+        <Border
+            Grid.Column="1"
+            BorderBrush="White"
+            BorderThickness="1">
+            <ListView />
+        </Border>
     </Grid>
 </Page>
