@@ -1,8 +1,10 @@
-﻿using DeskAssistant.Models;
+﻿using DeskAssistant.DataBase;
+using DeskAssistant.Models;
 using DeskAssistant.SecureService;
 using DeskAssistant.Services;
 using DeskAssistant.ViewModels;
 using DeskAssistant.Views;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -79,15 +81,21 @@ namespace DeskAssistant
                     {
                         var configuration = context.Configuration;
 
+                        services.AddDbContext<TasksDbContext>(options =>
+                        options.UseNpgsql("Host=localhost;Port=5432;Database=CalendarTasksDb;Username=postgres;Password=postgres"));
+
                         services.AddSingleton<IActivationService, ActivationService>();
 
                         services.AddSingleton(this);
+                        services.AddSingleton<ShellViewModel>();
+
+                        services.AddScoped<CalendarPage>();
+                        services.AddScoped<CalendarViewModel>();
+                        services.AddScoped<TaskService>();
+
                         services.AddTransient<ShellPage>();
                         services.AddTransient<BirthdayTrackerPage>();
                         services.AddTransient<BirthdayTrackerViewModel>();
-                        services.AddTransient<CalendarPage>();
-                        services.AddTransient<CalendarViewModel>();
-                        services.AddSingleton<ShellViewModel>();
                         services.AddTransient<NavigationPages>();
                         services.AddTransient<EmailService>();
                         services.AddTransient<EncryptionHelper>();
@@ -95,9 +103,6 @@ namespace DeskAssistant
                         services.Configure<EmailSettings>(configuration.GetSection(nameof(EmailSettings)));
                         services.Configure<EncryptionSettings>(configuration.GetSection(nameof(EncryptionSettings)));
                         services.Configure<NavigationPages>(context.Configuration.GetSection("NavigationPages"));
-
-                        IServiceProvider serviceProvider = services.BuildServiceProvider();
-
                     })
                     .ConfigureLogging((context, logging) =>
                     {
@@ -107,10 +112,9 @@ namespace DeskAssistant
                                 
                 _host = hostBuilder.Build();
 
-                //var options = _host.Services.GetRequiredService<IOptions<EmailSettings>>();
-                //EmailSettings = options.Value;
-                //_emailService = _host.Services.GetRequiredService<EmailService>();
-                //_encryptionHelper = _host.Services.GetRequiredService<EncryptionHelper>();
+                using var scope = _host.Services.CreateScope();
+                var calendarVm = scope.ServiceProvider.GetRequiredService<CalendarViewModel>();
+                var calendarPage = scope.ServiceProvider.GetRequiredService<CalendarPage>();
 
                 _logger.Trace("App is loaded");
             }
