@@ -12,14 +12,15 @@ namespace DeskAssistant.Views
     /// </summary>
     public sealed partial class ShellPage : Page
     {
-
+        private readonly IServiceProvider _serviceProvider;
         public ShellViewModel ViewModel { get; }
 
-        public ShellPage(ShellViewModel viewModel)
+        public ShellPage(ShellViewModel viewModel, IServiceProvider serviceProvider)
         {
-            ViewModel = viewModel;
-
             this.InitializeComponent();
+
+            ViewModel = viewModel;
+            _serviceProvider = serviceProvider;            
 
             App.MainWindow.ExtendsContentIntoTitleBar = true;
             App.MainWindow.SetTitleBar(AppTitleBar);
@@ -36,7 +37,7 @@ namespace DeskAssistant.Views
             if (args.SelectedItemContainer is NavigationViewItem selectedItem)
             {
                 string selectedTag = selectedItem.Tag.ToString();
-                ViewModel.NavigationView(selectedTag, contentFrame);
+                ViewModel.NavigationView(selectedTag, contentFrame, _serviceProvider);
             }
         }
 
