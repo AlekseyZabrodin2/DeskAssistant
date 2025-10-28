@@ -34,7 +34,6 @@ namespace DeskAssistant.Models
 
         // Для календарного отображения
         public TimeSpan? Duration { get; set; }
-        public string Color { get; set; } = "#007ACC";
 
 
     }
