@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="DeskAssistant.Views.AddTaskDialogControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewModels="using:DeskAssistant.ViewModels"
+    Width="400"
+    mc:Ignorable="d">
+
+    <Grid>
+        <StackPanel Padding="0,10" Spacing="20">
+            <TextBox
+                Header="Название задачи"
+                IsReadOnly="{x:Bind ViewModel.IsDoubleTapped, Mode=TwoWay}"
+                Text="{x:Bind ViewModel.DialogName, Mode=TwoWay}" />
+            <TextBox
+                Height="150"
+                Header="Описание"
+                IsReadOnly="{x:Bind ViewModel.IsDoubleTapped, Mode=TwoWay}"
+                Text="{x:Bind ViewModel.DialogDescription, Mode=TwoWay}"
+                TextWrapping="Wrap" />
+
+            <StackPanel Margin="0,10" Orientation="Horizontal">
+                <TextBlock
+                    Margin="0,0,10,0"
+                    VerticalAlignment="Center"
+                    Text="Дата задачи:" />
+                <TextBlock Text="{x:Bind ViewModel.DialogDueDate, Mode=TwoWay}" />
+            </StackPanel>
+
+            <ComboBox
+                Width="200"
+                Header="Категория"
+                IsHitTestVisible="{x:Bind ViewModel.IsComboBoxDropdown, Mode=TwoWay}"
+                IsTabStop="{x:Bind ViewModel.IsComboBoxDropdown, Mode=TwoWay}"
+                ItemsSource="{x:Bind ViewModel.DialogCategories}"
+                PlaceholderText="Выберите категорию"
+                SelectedItem="{x:Bind ViewModel.DialogCategory, Mode=TwoWay}" />
+            <ComboBox
+                Width="200"
+                Header="Приоритет"
+                IsHitTestVisible="{x:Bind ViewModel.IsComboBoxDropdown, Mode=TwoWay}"
+                IsTabStop="{x:Bind ViewModel.IsComboBoxDropdown, Mode=TwoWay}"
+                ItemsSource="{x:Bind ViewModel.PrioritiesOptions}"
+                PlaceholderText="Выберите приоритет"
+                SelectedItem="{x:Bind ViewModel.DialogPriority, Mode=TwoWay}" />
+        </StackPanel>
+    </Grid>
+</UserControl>
+
