@@ -9,9 +9,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.UI.Xaml;
+using NLog;
 using NLog.Extensions.Logging;
+using ILogger = NLog.ILogger;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -24,7 +25,7 @@ namespace DeskAssistant
     public partial class App : Application
     {
         private readonly IHost _host;
-        private readonly NLog.ILogger _logger = NLog.LogManager.GetCurrentClassLogger();
+        private readonly ILogger _logger = LogManager.GetCurrentClassLogger();
         public static Window MainWindow = new MainWindow();
 
 
@@ -56,7 +57,7 @@ namespace DeskAssistant
         {
             try
             {
-                _logger.Trace("AutoTestRunner start to load");
+                _logger.Trace("Assistant start to load");
 
                 this.InitializeComponent();
 
@@ -81,7 +82,7 @@ namespace DeskAssistant
                     {
                         var configuration = context.Configuration;
 
-                        services.AddDbContext<TasksDbContext>(options =>
+                        services.AddDbContextFactory<TasksDbContext>(options =>
                         options.UseNpgsql("Host=localhost;Port=5432;Database=CalendarTasksDb;Username=postgres;Password=postgres"));
 
                         services.AddSingleton<IActivationService, ActivationService>();
@@ -91,8 +92,8 @@ namespace DeskAssistant
 
                         services.AddScoped<CalendarPage>();
                         services.AddScoped<CalendarViewModel>();
-                        services.AddScoped<TaskService>();
 
+                        services.AddTransient<TaskService>();
                         services.AddTransient<ShellPage>();
                         services.AddTransient<BirthdayTrackerPage>();
                         services.AddTransient<BirthdayTrackerViewModel>();
@@ -111,10 +112,6 @@ namespace DeskAssistant
                     });
                                 
                 _host = hostBuilder.Build();
-
-                using var scope = _host.Services.CreateScope();
-                var calendarVm = scope.ServiceProvider.GetRequiredService<CalendarViewModel>();
-                var calendarPage = scope.ServiceProvider.GetRequiredService<CalendarPage>();
 
                 _logger.Trace("App is loaded");
             }
