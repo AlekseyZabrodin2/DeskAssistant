@@ -1,40 +1,49 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace DeskAssistant.Models
 {
-    public class CalendarTaskModel
+    public partial class CalendarTaskModel : ObservableObject
     {
-        public int Id { get; set; }
+        [ObservableProperty]
+        public partial int Id { get; set; }
 
-        // Основная информация
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
+        [ObservableProperty]
+        public partial string Name { get; set; } = string.Empty;
+        [ObservableProperty]
+        public partial string Description { get; set; } = string.Empty;
 
-        // Даты и время
-        public DateTime CreatedDate { get; set; } = DateTime.Now;
-        public DateTime DueDate { get; set; }           // Дата выполнения (ОБЯЗАТЕЛЬНО для календаря!)
-        public TimeSpan? DueTime { get; set; }
-        public DateTime? ReminderTime { get; set; }
-        public DateTime? CompletedDate { get; set; }
+        [ObservableProperty]
+        public partial DateTime CreatedDate { get; set; } = DateTime.Now;
+        [ObservableProperty]
+        public partial DateOnly DueDate { get; set; }
 
-        // Классификация
-        public string Priority { get; set; } = "Medium"; // High, Medium, Low
-        public string Category { get; set; } = "General"; // Work, Personal, Health, etc.
-        public List<string> Tags { get; set; } = new();  // #работа, #здоровье
-        public string Status { get; set; } = string.Empty;
+        public string DueDateFormatted => DueDate.ToString("dd.MM");
 
-        // Статус
-        public bool IsCompleted { get; set; }
-        public bool IsRecurring { get; set; }
-        public string RecurrencePattern { get; set; } = string.Empty; // "Daily", "Weekly", "Monthly"
+        [ObservableProperty]
+        public partial TimeSpan? DueTime { get; set; }
+        [ObservableProperty]
+        public partial DateTime? ReminderTime { get; set; }
+        [ObservableProperty]
+        public partial DateTime? CompletedDate { get; set; }
 
-        // Для календарного отображения
-        public TimeSpan? Duration { get; set; }
+        [ObservableProperty]
+        public partial PrioritiesLevel Priority { get; set; }
+        [ObservableProperty]
+        public partial string Category { get; set; } = string.Empty;
+        [ObservableProperty]
+        public partial string Tags { get; set; } = string.Empty;
+        [ObservableProperty]
+        public partial TaskStatus Status { get; set; }
 
+        [ObservableProperty]
+        public partial bool IsCompleted { get; set; }
+        [ObservableProperty]
+        public partial bool IsRecurring { get; set; }
+        [ObservableProperty]
+        public partial string RecurrencePattern { get; set; } = string.Empty;
+
+        [ObservableProperty]
+        public partial TimeSpan? Duration { get; set; }
 
     }
 }

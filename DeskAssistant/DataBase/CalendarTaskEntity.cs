@@ -1,27 +1,45 @@
-﻿namespace DeskAssistant.DataBase
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+
+namespace DeskAssistant.DataBase
 {
-    public class CalendarTaskEntity
+    public partial class CalendarTaskEntity : ObservableObject
     {
-        public int Id { get; set; }
+        [ObservableProperty]
+        public partial int Id { get; set; }
 
-        public string Name { get; set; }
-        public string Description { get; set; }
+        [ObservableProperty]
+        public partial string Name { get; set; }
+        [ObservableProperty]
+        public partial string Description { get; set; }
 
-        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
-        public DateTime DueDate { get; set; } = DateTime.UtcNow;
-        public TimeSpan? DueTime { get; set; }
-        public DateTime? ReminderTime { get; set; }
-        public DateTime? CompletedDate { get; set; }
+        [ObservableProperty]
+        public partial DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        [ObservableProperty]
+        public partial DateOnly DueDate { get; set; }
+        [ObservableProperty]
+        public partial TimeSpan? DueTime { get; set; }
+        [ObservableProperty]
+        public partial DateTime? ReminderTime { get; set; }
+        [ObservableProperty]
+        public partial DateTime? CompletedDate { get; set; }
 
-        public string Priority { get; set; }
-        public string Category { get; set; }
-        public string Tags { get; set; }
-        public string Status { get; set; }
+        [ObservableProperty]
+        public partial PrioritiesLevel Priority { get; set; }
+        [ObservableProperty]
+        public partial string Category { get; set; }
+        [ObservableProperty]
+        public partial string Tags { get; set; }
+        [ObservableProperty]
+        public partial TaskStatus Status { get; set; }
 
-        public bool IsCompleted { get; set; }
-        public bool IsRecurring { get; set; }
-        public string RecurrencePattern { get; set; }
+        [ObservableProperty]
+        public partial bool IsCompleted { get; set; }
+        [ObservableProperty]
+        public partial bool IsRecurring { get; set; }
+        [ObservableProperty]
+        public partial string RecurrencePattern { get; set; }
 
-        public TimeSpan? Duration { get; set; }
+        [ObservableProperty]
+        public partial TimeSpan? Duration { get; set; }
     }
 }
