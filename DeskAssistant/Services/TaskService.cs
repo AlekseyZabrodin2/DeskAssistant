@@ -1,48 +1,64 @@
 ﻿using DeskAssistant.DataBase;
+using DeskAssistant.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.ObjectModel;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DeskAssistant.Services
 {
     public class TaskService
     {
-        private readonly TasksDbContext _context;
+        private readonly IDbContextFactory<TasksDbContext> _contextFactory;
 
 
-        public TaskService(TasksDbContext context)
+        public TaskService(IDbContextFactory<TasksDbContext> contextFactory)
         {
-           _context = context;
+            _contextFactory = contextFactory;
         }
 
 
         public async Task<List<CalendarTaskEntity>> GetAllTasksAsync()
         {
-            //_logger.Trace("Get All patients");
-
-            var response = await _context.Tasks.ToListAsync();
+            using var context = _contextFactory.CreateDbContext();
+            var response = await context.Tasks.ToListAsync();
             return response;
         }
 
-        public async Task AddTaskForSelectedDateAsync()
+        public void AddTaskForSelectedDate(CalendarTaskEntity taskEntity)
         {
-            var task = new CalendarTaskEntity 
-            { 
-                Name = "Обед",
-                Description = "комплекс № 5",
-                DueDate = DateTime.UtcNow.AddDays(9),
-                Priority = "Normal",
-                Category = "General",
-                IsCompleted = true,
-                Status = "Pending", 
-                Tags = "tag1",
-                RecurrencePattern = "None" 
-            };
+            if (taskEntity.Name == string.Empty ||
+                taskEntity.Description == null)
+                return;
+
+            using var context = _contextFactory.CreateDbContext();
             
-            _context.Tasks.Add(task);
-            _context.SaveChanges();
+            context.Tasks.Add(taskEntity);
+            context.SaveChanges();
         }
 
+        public async Task UpdateTaskAsync(CalendarTaskModel model, TaskStatus status)
+        {
+            using var context = _contextFactory.CreateDbContext();
+            var entity = await context.Tasks.FindAsync(model.Id);
+            if (entity != null)
+            {
+                entity.Name = model.Name;
+                entity.Description = model.Description;
+                entity.DueDate = model.DueDate;
+                entity.IsCompleted = model.IsCompleted;
+                entity.Priority = model.Priority;
+                entity.Category = model.Category;
+                entity.Status = status;
+                entity.Tags = model.Tags;
+                entity.DueTime = model.DueTime;
+                entity.ReminderTime = model.ReminderTime;
+                entity.CompletedDate = model.CompletedDate;
+                entity.IsRecurring = model.IsRecurring;
+                entity.RecurrencePattern = model.RecurrencePattern;
+                entity.Duration = model.Duration;
 
+                context.SaveChanges();
+            }
+        }
 
     }
 }
