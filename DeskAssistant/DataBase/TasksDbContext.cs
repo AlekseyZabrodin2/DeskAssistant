@@ -24,7 +24,7 @@ namespace DeskAssistant.DataBase
                 entity.Property(task => task.Description).HasColumnType("text");
 
                 entity.Property(task => task.CreatedDate).HasDefaultValueSql("NOW()").IsRequired();
-                entity.Property(task => task.DueDate).IsRequired();
+                entity.Property(task => task.DueDate).HasColumnType("date").IsRequired();
                 entity.Property(task => task.DueTime);
                 entity.Property(task => task.ReminderTime);
                 entity.Property(task => task.CompletedDate);
