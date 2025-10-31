@@ -1,6 +1,8 @@
+using DeskAssistant.Models;
 using DeskAssistant.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 
@@ -14,35 +16,89 @@ namespace DeskAssistant.Views
     /// </summary>
     public sealed partial class CalendarPage : Page
     {
-        public CalendarViewModel ViewModel { get; set; }
+        public CalendarViewModel ViewModel { get; }
 
         public CalendarPage(CalendarViewModel viewModel)
         {
-            ViewModel = viewModel;
-
             this.InitializeComponent();
-
+            ViewModel = viewModel;
             DataContext = ViewModel;
+            
+            ViewModel.TasksUpdated += () =>
+            {
+                DispatcherQueue.TryEnqueue(UpdateAllCalendarDots);
+            };
         }
+
+
 
         private void CalendarView_SelectedDatesChanged(CalendarView sender, CalendarViewSelectedDatesChangedEventArgs args)
         {
             if (sender.SelectedDates.Any())
             {
-                var selectedDate = sender.SelectedDates;
-                ViewModel.SelectedDate = selectedDate.FirstOrDefault().Date;
+                var selectedDate = sender.SelectedDates.First();
+                ViewModel.SelectedDate = DateOnly.FromDateTime(selectedDate.DateTime);
 
                 ViewModel.GetTasksForSelectedDate();
             }
         }
 
+        private void CalendarView_Loaded(object sender, RoutedEventArgs e)
+        {
+            ViewModel.TasksUpdated += () =>
+            {
+                DispatcherQueue.TryEnqueue(() => UpdateAllCalendarDots());
+            };
+
+            UpdateAllCalendarDots();
+        }
+
+        private void UpdateAllCalendarDots()
+        {
+            CalendarViewContainer.UpdateLayout();
+
+            var dayItems = FindChildren<CalendarViewDayItem>(CalendarViewContainer);
+            foreach (var dayItem in dayItems)
+            {
+                UpdateDotForDayItem(dayItem);
+            }
+        }
+
+        // Вспомогательный метод для обновления одной даты
+        private void UpdateDotForDayItem(CalendarViewDayItem dayItem)
+        {
+            var date = DateOnly.FromDateTime(dayItem.Date.DateTime);
+
+            bool hasTasks = ViewModel.AllTasks.Any(t => t.DueDate == date && !t.IsCompleted);
+
+            var taskDot = FindChild<Ellipse>(dayItem, "TaskDot");
+            if (taskDot != null)
+                taskDot.Visibility = hasTasks ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public static IEnumerable<T> FindChildren<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) yield break;
+
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+
+                if (child is T t) yield return t;
+
+                foreach (var descendant in FindChildren<T>(child))
+                    yield return descendant;
+            }
+        }
+
         private void CalendarView_CalendarViewDayItemChanging(CalendarView sender, CalendarViewDayItemChangingEventArgs args)
         {
-            var date = args.Item.Date.DateTime;
+            var date = DateOnly.FromDateTime(args.Item.Date.DateTime);
 
             // Проверяем, есть ли задачи на эту дату
             bool hasTasks = ViewModel.AllTasks.Any(t =>
-                t.DueDate.Date == date.Date && !t.IsCompleted);
+                t.DueDate == date && !t.IsCompleted);
 
             // Находим элемент TaskDot в визуальном дереве
             if (args.Phase == 0 && args.Item is CalendarViewDayItem dayItem)
@@ -56,11 +112,7 @@ namespace DeskAssistant.Views
                     if (hasTasks)
                     {
                         var highPriorityTasks = ViewModel.AllTasks.Any(t =>
-                            t.DueDate.Date == date.Date && !t.IsCompleted );
-
-                        //taskDot.Fill = highPriorityTasks ?
-                        //    new SolidColorBrush(Colors.Red) :
-                        //    new SolidColorBrush(Colors.Green);
+                            t.DueDate == date && !t.IsCompleted );
                     }
                 }
             }
@@ -81,6 +133,14 @@ namespace DeskAssistant.Views
                     return result;
             }
             return null;
+        }
+
+        private void ListView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedItem is CalendarTaskModel selectedTask)
+            {
+                ViewModel.OpenTaskDetails(selectedTask);
+            }
         }
     }
 }
