@@ -13,7 +13,8 @@ namespace DeskAssistant.Models
         public partial string Description { get; set; } = string.Empty;
 
         [ObservableProperty]
-        public partial DateTime? CreatedDate { get; set; } = DateTime.UtcNow;
+        public partial DateTime? CreatedDate { get; set; }        
+        public DateTime? LocalCreatedDate => CreatedDate?.ToLocalTime();
         [ObservableProperty]
         public partial DateOnly DueDate { get; set; }
 
@@ -25,6 +26,7 @@ namespace DeskAssistant.Models
         public partial DateTime? ReminderTime { get; set; }
         [ObservableProperty]
         public partial DateTime? CompletedDate { get; set; }
+        public DateTime? LocalCompletedDate => CompletedDate?.ToLocalTime();
 
         [ObservableProperty]
         public partial PrioritiesLevel Priority { get; set; }
