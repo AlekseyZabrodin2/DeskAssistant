@@ -2,6 +2,7 @@
 using DeskAssistant.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
 
 namespace DeskAssistant.Services
 {
@@ -23,7 +24,7 @@ namespace DeskAssistant.Services
             return response;
         }
 
-        public void AddTaskForSelectedDate(CalendarTaskEntity taskEntity)
+        public async Task AddTaskForSelectedDate(CalendarTaskEntity taskEntity)
         {
             if (taskEntity.Name == string.Empty ||
                 taskEntity.Description == null)
@@ -31,8 +32,8 @@ namespace DeskAssistant.Services
 
             using var context = _contextFactory.CreateDbContext();
             
-            context.Tasks.Add(taskEntity);
-            context.SaveChanges();
+            await context.Tasks.AddAsync(taskEntity);
+            await context.SaveChangesAsync();
         }
 
         public async Task UpdateTaskAsync(CalendarTaskModel model, TaskStatus status)
