@@ -37,7 +37,7 @@
                         CanFilterColumns="True"
                         DoubleTapped="ListView_DoubleTapped"
                         IsReadOnly="True"
-                        ItemsSource="{x:Bind ViewModel.MonthTasksAllTasks, Mode=OneWay}"
+                        ItemsSource="{x:Bind ViewModel.AllTasks, Mode=OneWay}"
                         SelectionMode="Extended"
                         ShowExportOptions="True"
                         ShowOptionsButton="True">

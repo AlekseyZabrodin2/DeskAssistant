@@ -10,7 +10,6 @@ using NLog;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Threading.Tasks;
 
 namespace DeskAssistant.ViewModels
 {
@@ -18,6 +17,7 @@ namespace DeskAssistant.ViewModels
     {
         private static readonly ILogger _logger = LogManager.GetCurrentClassLogger();
         private readonly TaskService _taskService;
+        private Frame _contentFrame;
         public event Action? TasksUpdated;
         private LoggerHelper _loggerHelper = new();
 
@@ -82,6 +82,11 @@ namespace DeskAssistant.ViewModels
 
             _ = GetAllTasksFromDbAsync();
             GetWeekPeriod();        
+        }
+
+        public void InitializeFrame(Frame contentFrame)
+        {
+            _contentFrame = contentFrame;
         }
 
         private void OnTasksCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -169,7 +174,7 @@ namespace DeskAssistant.ViewModels
                 vm.DialogPriority = 0;
                 vm.DialogCategory = null;
 
-                _taskService.AddTaskForSelectedDate(newTask);
+                await _taskService.AddTaskForSelectedDate(newTask);
                 await GetAllTasksFromDbAsync();
             }
             TasksUpdated?.Invoke();
@@ -178,13 +183,14 @@ namespace DeskAssistant.ViewModels
         [RelayCommand]
         private void OpenMonthTasks()
         {
-            var dialogVm = new MonthTasksWindowViewModel();
-            dialogVm.MonthTasksAllTasks = AllTasks;
-
-            var dialogControl = new MonthTasksWindow(dialogVm);
-            dialogControl.Activate();
+            _contentFrame.Content = new MonthTasksUserControl(this);
         }
 
+        [RelayCommand]
+        private void BackToCalendarView()
+        {
+            _contentFrame.Content = new CalendarUserControl(this);
+        }
 
         private async Task GetAllTasksFromDbAsync()
         {
