@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="DeskAssistant.Views.MonthTasksUserControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:convert="using:DeskAssistant.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:DeskAssistant.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:DeskAssistant.Models"
+    xmlns:table="using:WinUI.TableView"
+    xmlns:viewmodels="using:DeskAssistant.ViewModels"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <convert:StatusColorConverter x:Key="StatusColorConverter" />
+        <convert:PriorityToBrushConverter x:Key="PriorityToBrushConverter" />
+    </UserControl.Resources>
+
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border
+            Margin="10"
+            BorderBrush="White"
+            BorderThickness="1">
+            <Grid>
+                <ScrollViewer Height="630">
+                    <table:TableView
+                        x:Name="MonthUserControl"
+                        AutoGenerateColumns="False"
+                        BorderThickness="0"
+                        CanFilterColumns="True"
+                        DoubleTapped="ListView_DoubleTapped"
+                        IsReadOnly="True"
+                        ItemsSource="{x:Bind ViewModel.MonthTasksAllTasks, Mode=OneWay}"
+                        SelectionMode="Extended"
+                        ShowExportOptions="True"
+                        ShowOptionsButton="True">
+                        <table:TableView.Resources>
+                            <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundColor" Color="Transparent" />
+                        </table:TableView.Resources>
+                        <table:TableView.Columns>
+                            <table:TableViewTextColumn
+                                Width="130"
+                                Binding="{Binding Name}"
+                                Header="Name" />
+                            <table:TableViewTextColumn
+                                Width="200"
+                                Binding="{Binding Description}"
+                                Header="Description" />
+                            <table:TableViewTextColumn
+                                Width="100"
+                                Binding="{Binding DueDate}"
+                                Header="Due Date" />
+                            <table:TableViewTextColumn
+                                Width="150"
+                                Binding="{Binding LocalCreatedDate}"
+                                Header="Created Date" />
+                            <table:TableViewTextColumn
+                                Width="150"
+                                Binding="{Binding LocalCompletedDate}"
+                                Header="Completed Date" />
+                            <table:TableViewTextColumn
+                                Width="100"
+                                Binding="{Binding Priority}"
+                                Header="Priority" />
+                            <table:TableViewTextColumn
+                                Width="110"
+                                Binding="{Binding Category}"
+                                Header="Category" />
+                            <table:TableViewTextColumn
+                                Width="100"
+                                Binding="{Binding Status}"
+                                Header="Status" />
+                        </table:TableView.Columns>
+                    </table:TableView>
+                </ScrollViewer>
+
+            </Grid>
+        </Border>
+        <Button
+            Grid.Row="1"
+            Margin="10,0"
+            HorizontalAlignment="Right"
+            Command="{x:Bind ViewModel.BackToCalendarViewCommand}"
+            Content="Назад" />
+    </Grid>
+</UserControl>

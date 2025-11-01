@@ -1,0 +1,49 @@
+using DeskAssistant.Models;
+using DeskAssistant.ViewModels;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Foundation;
+using Windows.Foundation.Collections;
+
+// To learn more about WinUI, the WinUI project structure,
+// and more about our project templates, see: http://aka.ms/winui-project-info.
+
+namespace DeskAssistant.Views
+{
+    public sealed partial class MonthTasksUserControl : UserControl
+    {
+        public CalendarViewModel ViewModel { get; }
+
+        public MonthTasksUserControl(CalendarViewModel viewModel)
+        {
+            InitializeComponent();
+            ViewModel = viewModel;
+        }
+
+
+        private void ListView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+            if (sender is WinUI.TableView.TableView tableView)
+            {
+                var originalSource = e.OriginalSource as FrameworkElement;
+                var dataContext = originalSource?.DataContext;
+
+                if (dataContext is CalendarTaskModel selectedTask)
+                {
+                    ViewModel.OpenTaskDetails(selectedTask);
+                }
+            }
+        }
+
+    }
+}
