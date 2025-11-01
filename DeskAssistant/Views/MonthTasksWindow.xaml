@@ -26,8 +26,8 @@
                     AutoGenerateColumns="False"
                     BorderThickness="0"
                     CanFilterColumns="True"
-                    IsReadOnly="True"
                     DoubleTapped="ListView_DoubleTapped"
+                    IsReadOnly="True"
                     ItemsSource="{x:Bind ViewModel.MonthTasksAllTasks, Mode=OneWay}"
                     SelectionMode="Extended"
                     ShowExportOptions="True"
@@ -48,6 +48,10 @@
                             Width="0.1*"
                             Binding="{Binding DueDate}"
                             Header="Due Date" />
+                        <table:TableViewTextColumn
+                            Width="Auto"
+                            Binding="{Binding CreatedDate}"
+                            Header="Created Date" />
                         <table:TableViewTextColumn
                             Width="Auto"
                             Binding="{Binding CompletedDate}"

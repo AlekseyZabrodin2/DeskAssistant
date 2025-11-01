@@ -13,7 +13,7 @@ namespace DeskAssistant.DataBase
         public partial string Description { get; set; }
 
         [ObservableProperty]
-        public partial DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public partial DateTime? CreatedDate { get; set; } = DateTime.UtcNow;
         [ObservableProperty]
         public partial DateOnly DueDate { get; set; }
         [ObservableProperty]

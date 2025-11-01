@@ -114,6 +114,7 @@ namespace DeskAssistant.ViewModels
                 var task = sender as CalendarTaskModel;
                 if (task != null)
                 {
+                    task.CompletedDate = DateTime.UtcNow;
                     await _taskService.UpdateTaskAsync(task, TaskStatus.Completed);
                     await GetAllTasksFromDbAsync();
                 }
@@ -153,6 +154,7 @@ namespace DeskAssistant.ViewModels
                 {
                     Name = vm.DialogName,
                     Description = vm.DialogDescription,
+                    CreatedDate = DateTime.UtcNow,
                     DueDate = vm.DialogDueDate,
                     Priority = vm.DialogPriority ==  0 ? PrioritiesLevel.Низкий : vm.DialogPriority,
                     Category = vm.DialogCategory == null ? "Разное" : vm.DialogCategory,
@@ -230,36 +232,6 @@ namespace DeskAssistant.ViewModels
             int daysUntilSunday = ((int)DayOfWeek.Sunday - (int)DateTime.Today.DayOfWeek + 7) % 7;
             WeekPeriod = DateOnly.FromDateTime(DateTime.Today).AddDays(daysUntilSunday);
         }
-
-        //public void GetTasksForSelectedDate()
-        //{
-        //    _loggerHelper.LogEnteringTheMethod();
-
-        //    if (AllTasks == null || SelectedDayTasks == null) 
-        //        return;
-
-        //    SelectedDayTasks.Clear();
-
-        //    foreach (var task in AllTasks)
-        //    {
-        //        var dueDate = task.DueDate;
-        //        var selectedDate = SelectedDate;
-
-        //        if (dueDate == selectedDate && !task.IsCompleted)
-        //        {
-        //            if (selectedDate == DateOnly.FromDateTime(DateTime.Today))
-        //            {
-        //                task.Status = TaskStatus.InProgress;
-        //            }
-
-        //            _ = _taskService.UpdateTaskAsync(task, task.Status);
-        //            SelectedDayTasks.Add(task);
-        //        }
-        //    }
-        //    DayTasksCount = SelectedDayTasks.Count;
-
-        //    TasksUpdated?.Invoke();
-        //}
 
         public void GetTasksForSelectedDate()
         {

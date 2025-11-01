@@ -13,7 +13,7 @@ namespace DeskAssistant.Models
         public partial string Description { get; set; } = string.Empty;
 
         [ObservableProperty]
-        public partial DateTime CreatedDate { get; set; } = DateTime.Now;
+        public partial DateTime? CreatedDate { get; set; } = DateTime.UtcNow;
         [ObservableProperty]
         public partial DateOnly DueDate { get; set; }
 
