@@ -33,7 +33,8 @@
     <None Remove="Views\AddTaskDialogControl.xaml" />
     <None Remove="Views\BirthdayTrackerPage.xaml" />
     <None Remove="Views\CalendarPage.xaml" />
-    <None Remove="Views\MonthTasksWindow.xaml" />
+    <None Remove="Views\CalendarUserControl.xaml" />
+    <None Remove="Views\MonthTasksUserControl.xaml" />
     <None Remove="Views\ShellPage.xaml" />
   </ItemGroup>
 
@@ -96,7 +97,10 @@
     <None Update="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Page Update="Views\MonthTasksWindow.xaml">
+    <Page Update="Views\MonthTasksUserControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="Views\CalendarUserControl.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="Views\AddTaskDialogControl.xaml">
