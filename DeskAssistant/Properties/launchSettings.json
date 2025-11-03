@@ -1,12 +1,15 @@
 {
   "profiles": {
-    "DeskAssistant (Package)": {
-      "commandName": "MsixPackage"
-    },
-    "DeskAssistant (Unpackaged)": {
+    "DeskAssistant (Development/Unpackaged)": {
       "commandName": "Project",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "DeskAssistant (Production/Unpackaged)": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Production"
       }
     }
   }
