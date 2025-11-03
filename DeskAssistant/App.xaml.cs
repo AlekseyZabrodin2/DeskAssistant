@@ -29,6 +29,7 @@ namespace DeskAssistant
         public static Window MainWindow = new MainWindow();
 
 
+        public ConnectionSettings ConnectionSettings { get; set; }
         public EmailSettings EmailSettings { get; set; }
         public EncryptionSettings EncryptionSettings { get; set; }
         public static UIElement? AppTitlebar { get; set; }
@@ -65,7 +66,11 @@ namespace DeskAssistant
                     .ConfigureAppConfiguration((context, config) =>
                     {
                         var env = context.HostingEnvironment;
+                        _logger.Info($"App start with [{env.EnvironmentName}] environment");
 
+                        config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                        .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: false, reloadOnChange: true)
+                        .AddEnvironmentVariables();
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/navigationSettings.json"));
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/emailServiceSettings.json"));
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/encryptionSettings.json"));
@@ -83,7 +88,10 @@ namespace DeskAssistant
                         var configuration = context.Configuration;
 
                         services.AddDbContextFactory<TasksDbContext>(options =>
-                        options.UseNpgsql("Host=localhost;Port=5432;Database=CalendarTasksDb;Username=postgres;Password=postgres"));
+                        {
+                            var connectingString = context.Configuration.GetConnectionString("DefaultConnection");
+                            options.UseNpgsql(connectingString);
+                        });
 
                         services.AddSingleton<IActivationService, ActivationService>();
 
@@ -101,6 +109,7 @@ namespace DeskAssistant
                         services.AddTransient<EmailService>();
                         services.AddTransient<EncryptionHelper>();
 
+                        services.Configure<ConnectionSettings>(configuration.GetSection(nameof(ConnectionSettings)));
                         services.Configure<EmailSettings>(configuration.GetSection(nameof(EmailSettings)));
                         services.Configure<EncryptionSettings>(configuration.GetSection(nameof(EncryptionSettings)));
                         services.Configure<NavigationPages>(context.Configuration.GetSection("NavigationPages"));
