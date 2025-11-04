@@ -1,12 +1,10 @@
 ﻿using DeskAssistant.DataBase;
 using DeskAssistant.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using System.Threading.Tasks;
 
 namespace DeskAssistant.Services
 {
-    public class TaskService
+    public class TaskService : ITaskService
     {
         private readonly IDbContextFactory<TasksDbContext> _contextFactory;
 
@@ -61,5 +59,24 @@ namespace DeskAssistant.Services
             }
         }
 
+        public Task<CalendarTaskEntity> AddTaskAsync(CalendarTaskEntity task)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<CalendarTaskEntity>> GetTasksForDateAsync(DateTime date)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<CalendarTaskEntity> GetTaskByIdAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> DeleteTaskAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

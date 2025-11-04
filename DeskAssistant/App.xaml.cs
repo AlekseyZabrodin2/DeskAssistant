@@ -101,7 +101,7 @@ namespace DeskAssistant
                         services.AddScoped<CalendarPage>();
                         services.AddScoped<CalendarViewModel>();
 
-                        services.AddTransient<TaskService>();
+                        services.AddTransient<ITaskService, TaskService>();
                         services.AddTransient<ShellPage>();
                         services.AddTransient<BirthdayTrackerPage>();
                         services.AddTransient<BirthdayTrackerViewModel>();
