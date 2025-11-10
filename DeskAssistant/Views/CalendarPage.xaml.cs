@@ -1,3 +1,4 @@
+using DeskAssistant.Services;
 using DeskAssistant.ViewModels;
 using Microsoft.UI.Xaml.Controls;
 
@@ -11,15 +12,19 @@ namespace DeskAssistant.Views
     /// </summary>
     public sealed partial class CalendarPage : Page
     {
-        public CalendarViewModel ViewModel { get; set; }
+        public CalendarViewModel ViewModel { get; }
 
-        public CalendarPage()
+
+        public CalendarPage(CalendarViewModel viewModel)
         {
-            ViewModel = App.GetService<CalendarViewModel>();
-
             this.InitializeComponent();
 
-            DataContext = ViewModel;
+            ViewModel = viewModel;
+
+            var tasksControl = new CalendarUserControl(ViewModel);
+            CalendarFrame.Content = tasksControl;
+
+            ViewModel.InitializeFrame(CalendarFrame);
         }
     }
 }

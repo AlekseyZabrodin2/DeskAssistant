@@ -7,9 +7,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.UI.Xaml;
+using NLog;
 using NLog.Extensions.Logging;
+using ILogger = NLog.ILogger;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -22,10 +23,11 @@ namespace DeskAssistant
     public partial class App : Application
     {
         private readonly IHost _host;
-        private readonly NLog.ILogger _logger = NLog.LogManager.GetCurrentClassLogger();
+        private readonly ILogger _logger = LogManager.GetCurrentClassLogger();
         public static Window MainWindow = new MainWindow();
 
 
+        public ConnectionSettings ConnectionSettings { get; set; }
         public EmailSettings EmailSettings { get; set; }
         public EncryptionSettings EncryptionSettings { get; set; }
         public static UIElement? AppTitlebar { get; set; }
@@ -54,7 +56,7 @@ namespace DeskAssistant
         {
             try
             {
-                _logger.Trace("AutoTestRunner start to load");
+                _logger.Trace("Assistant start to load");
 
                 this.InitializeComponent();
 
@@ -62,7 +64,11 @@ namespace DeskAssistant
                     .ConfigureAppConfiguration((context, config) =>
                     {
                         var env = context.HostingEnvironment;
+                        _logger.Info($"App start with [{env.EnvironmentName}] environment");
 
+                        //config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                        //.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: false, reloadOnChange: true)
+                        //.AddEnvironmentVariables();
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/navigationSettings.json"));
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/emailServiceSettings.json"));
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/encryptionSettings.json"));
@@ -78,26 +84,26 @@ namespace DeskAssistant
                     .ConfigureServices((context, services) =>
                     {
                         var configuration = context.Configuration;
-
+                        
                         services.AddSingleton<IActivationService, ActivationService>();
 
                         services.AddSingleton(this);
+                        services.AddSingleton<ShellViewModel>();
+
+                        services.AddScoped<CalendarPage>();
+                        services.AddScoped<CalendarViewModel>();
+
                         services.AddTransient<ShellPage>();
                         services.AddTransient<BirthdayTrackerPage>();
                         services.AddTransient<BirthdayTrackerViewModel>();
-                        services.AddTransient<CalendarPage>();
-                        services.AddTransient<CalendarViewModel>();
-                        services.AddSingleton<ShellViewModel>();
                         services.AddTransient<NavigationPages>();
                         services.AddTransient<EmailService>();
                         services.AddTransient<EncryptionHelper>();
 
+                        services.Configure<ConnectionSettings>(configuration.GetSection(nameof(ConnectionSettings)));
                         services.Configure<EmailSettings>(configuration.GetSection(nameof(EmailSettings)));
                         services.Configure<EncryptionSettings>(configuration.GetSection(nameof(EncryptionSettings)));
                         services.Configure<NavigationPages>(context.Configuration.GetSection("NavigationPages"));
-
-                        IServiceProvider serviceProvider = services.BuildServiceProvider();
-
                     })
                     .ConfigureLogging((context, logging) =>
                     {
@@ -106,11 +112,6 @@ namespace DeskAssistant
                     });
                                 
                 _host = hostBuilder.Build();
-
-                //var options = _host.Services.GetRequiredService<IOptions<EmailSettings>>();
-                //EmailSettings = options.Value;
-                //_emailService = _host.Services.GetRequiredService<EmailService>();
-                //_encryptionHelper = _host.Services.GetRequiredService<EncryptionHelper>();
 
                 _logger.Trace("App is loaded");
             }

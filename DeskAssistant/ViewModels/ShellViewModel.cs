@@ -36,7 +36,7 @@ namespace DeskAssistant.ViewModels
         }
 
 
-        public void NavigationView(string pageTag, Frame frame)
+        public void NavigationView(string pageTag, Frame frame, IServiceProvider serviceProvider)
         {
 
             SelectedPage = pageTag;
@@ -47,7 +47,9 @@ namespace DeskAssistant.ViewModels
             }
             else if (pageTag == "CalendarPage")
             {
-                frame.Navigate(typeof(CalendarPage));
+                using var scope = serviceProvider.CreateScope();
+                var calendarPage = scope.ServiceProvider.GetService<CalendarPage>();
+                frame.Content = calendarPage;
             }
             else
             {
