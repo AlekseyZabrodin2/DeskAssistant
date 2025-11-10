@@ -1,10 +1,8 @@
-﻿using DeskAssistant.DataBase;
-using DeskAssistant.Models;
+﻿using DeskAssistant.Models;
 using DeskAssistant.SecureService;
 using DeskAssistant.Services;
 using DeskAssistant.ViewModels;
 using DeskAssistant.Views;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -68,9 +66,9 @@ namespace DeskAssistant
                         var env = context.HostingEnvironment;
                         _logger.Info($"App start with [{env.EnvironmentName}] environment");
 
-                        config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                        .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: false, reloadOnChange: true)
-                        .AddEnvironmentVariables();
+                        //config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                        //.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: false, reloadOnChange: true)
+                        //.AddEnvironmentVariables();
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/navigationSettings.json"));
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/emailServiceSettings.json"));
                         config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/encryptionSettings.json"));
@@ -86,13 +84,7 @@ namespace DeskAssistant
                     .ConfigureServices((context, services) =>
                     {
                         var configuration = context.Configuration;
-
-                        services.AddDbContextFactory<TasksDbContext>(options =>
-                        {
-                            var connectingString = context.Configuration.GetConnectionString("DefaultConnection");
-                            options.UseNpgsql(connectingString);
-                        });
-
+                        
                         services.AddSingleton<IActivationService, ActivationService>();
 
                         services.AddSingleton(this);
@@ -101,7 +93,6 @@ namespace DeskAssistant
                         services.AddScoped<CalendarPage>();
                         services.AddScoped<CalendarViewModel>();
 
-                        services.AddTransient<ITaskService, TaskService>();
                         services.AddTransient<ShellPage>();
                         services.AddTransient<BirthdayTrackerPage>();
                         services.AddTransient<BirthdayTrackerViewModel>();

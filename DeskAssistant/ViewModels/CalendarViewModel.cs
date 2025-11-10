@@ -1,10 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DeskAssistant.DataBase;
+using DeskAssistant.Core.Extensions;
+using DeskAssistant.Core.Models;
 using DeskAssistant.Helpers;
-using DeskAssistant.Models;
-using DeskAssistant.Services;
 using DeskAssistant.Views;
+using Grpc.Net.Client;
+using GrpcService;
 using Microsoft.UI.Xaml.Controls;
 using NLog;
 using System.Collections.ObjectModel;
@@ -16,11 +17,16 @@ namespace DeskAssistant.ViewModels
     public partial class CalendarViewModel : ObservableObject
     {
         private static readonly ILogger _logger = LogManager.GetCurrentClassLogger();
-        private readonly TaskService _taskService;
         private Frame _contentFrame;
         public event Action? TasksUpdated;
         private LoggerHelper _loggerHelper = new();
+        private readonly TaskService.TaskServiceClient _grpcClient;
+        private EnumExtensions _enumExtensions = new();
 
+        // gRPC сервер в debug запускается на порту 5000
+        private readonly GrpcChannel _grpcChannel = GrpcChannel.ForAddress("http://localhost:5000");
+        // gRPC сервер в release запускается на порту 5218
+        //private readonly GrpcChannel _grpcChannel = GrpcChannel.ForAddress("http://localhost:5218");
 
         public string LableForTodayTasks
         {
@@ -61,9 +67,11 @@ namespace DeskAssistant.ViewModels
 
 
 
-        public CalendarViewModel(TaskService taskService)
+        public CalendarViewModel()
         {
-            _taskService = taskService;
+            _logger.Info($"gRPC client started with - [{_grpcChannel}] address");
+
+            _grpcClient = new TaskService.TaskServiceClient(_grpcChannel);
 
             AllTasks = new();
             WeekTasks = new();
@@ -114,71 +122,107 @@ namespace DeskAssistant.ViewModels
         {
             _loggerHelper.LogEnteringTheMethod();
 
-            if (e.PropertyName == nameof(CalendarTaskModel.IsCompleted))
+            try
             {
-                var task = sender as CalendarTaskModel;
-                if (task != null)
+                if (e.PropertyName == nameof(CalendarTaskModel.IsCompleted))
                 {
-                    task.CompletedDate = DateTime.UtcNow;
-                    await _taskService.UpdateTaskAsync(task, TaskStatus.Completed);
-                    await GetAllTasksFromDbAsync();
-                }
-            }
+                    var task = sender as CalendarTaskModel;
+                    if (task != null)
+                    {
+                        task.CompletedDate = DateTime.UtcNow;
+                        task.Status = TaskStatusEnum.Completed;
 
-            GetTasksForSelectedDate();
-            OnPropertyChanged(nameof(WeekTasks));
-            OnPropertyChanged(nameof(LableForTodayTasks));
-            OnPropertyChanged(nameof(LableForWeekTasks));
+                        var request = CalendarTaskModelToGrpcTask(task);
+
+                        await _grpcClient.UpdateTaskAsync(request);
+                        await GetAllTasksFromDbAsync();
+                    }
+                }
+
+                GetTasksForSelectedDate();
+                OnPropertyChanged(nameof(WeekTasks));
+                OnPropertyChanged(nameof(LableForTodayTasks));
+                OnPropertyChanged(nameof(LableForWeekTasks));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Can`t update property - {ex}");
+            }
         }
 
         [RelayCommand]
         private async Task CreateNewTask()
         {
-            var dialogVm = new AddTaskDialogViewModel
+            try
             {
-                DialogDueDate = SelectedDate
-            };
-
-            var dialogControl = new AddTaskDialogControl(dialogVm);
-            var dialog = new ContentDialog
-            {
-                Title = "Добавить задачу",
-                PrimaryButtonText = "Сохранить",
-                CloseButtonText = "Отмена",
-                DefaultButton = ContentDialogButton.Primary,
-                Content = dialogControl,
-                XamlRoot = App.MainWindow.Content.XamlRoot
-            };
-
-            var result = await dialog.ShowAsync();
-
-            if (result == ContentDialogResult.Primary)
-            {
-                var vm = dialogControl.ViewModel;
-                var newTask = new CalendarTaskEntity
+                var dialogVm = new AddTaskDialogViewModel
                 {
-                    Name = vm.DialogName,
-                    Description = vm.DialogDescription,
-                    CreatedDate = DateTime.UtcNow,
-                    DueDate = vm.DialogDueDate,
-                    Priority = vm.DialogPriority ==  0 ? PrioritiesLevel.Низкий : vm.DialogPriority,
-                    Category = vm.DialogCategory == null ? "Разное" : vm.DialogCategory,
-                    IsCompleted = false,
-                    Status = TaskStatus.Pending,
-                    Tags = vm.DialogTags == null ? "#общие" : vm.DialogTags,
-                    RecurrencePattern = "None"
+                    DialogDueDate = SelectedDate
                 };
 
-                vm.DialogName = string.Empty;
-                vm.DialogDescription = string.Empty;
-                vm.DialogPriority = 0;
-                vm.DialogCategory = null;
+                var dialogControl = new AddTaskDialogControl(dialogVm);
+                var dialog = new ContentDialog
+                {
+                    Title = "Добавить задачу",
+                    PrimaryButtonText = "Сохранить",
+                    CloseButtonText = "Отмена",
+                    DefaultButton = ContentDialogButton.Primary,
+                    Content = dialogControl,
+                    XamlRoot = App.MainWindow.Content.XamlRoot
+                };
 
-                await _taskService.AddTaskForSelectedDate(newTask);
-                await GetAllTasksFromDbAsync();
+                var result = await dialog.ShowAsync();
+
+                if (result == ContentDialogResult.Primary)
+                {
+                    var vm = dialogControl.ViewModel;
+                    var newTask = new CalendarTaskEntity
+                    {
+                        Name = vm.DialogName,
+                        Description = vm.DialogDescription,
+                        CreatedDate = DateTime.UtcNow,
+                        DueDate = vm.DialogDueDate,
+                        Priority = vm.DialogPriority == 0 ? PrioritiesLevelEnum.Низкий : vm.DialogPriority,
+                        Category = vm.DialogCategory == null ? "Разное" : vm.DialogCategory,
+                        IsCompleted = false,
+                        Status = TaskStatusEnum.Pending,
+                        Tags = vm.DialogTags == null ? "#общие" : vm.DialogTags,
+                        RecurrencePattern = "None"
+                    };
+
+                    if (string.IsNullOrEmpty(vm.DialogName) ||
+                        string.IsNullOrEmpty(vm.DialogDescription))
+                        return;
+
+                    vm.DialogName = string.Empty;
+                    vm.DialogDescription = string.Empty;
+                    vm.DialogPriority = 0;
+                    vm.DialogCategory = null;
+
+                    var request = new TaskItem
+                    {
+                        Name = newTask.Name ?? "",
+                        Description = newTask.Description ?? "",
+                        CreatedDate = newTask.CreatedDate.ToString() ?? "",
+                        DueDate = newTask.DueDate.ToString("yyyy-MM-dd") ?? "",
+                        Priority = _enumExtensions.PrioritiesLevelToString(newTask.Priority) ?? "",
+                        Category = newTask.Category ?? "",
+                        IsCompleted = newTask.IsCompleted.ToString() ?? "",
+                        Status = _enumExtensions.StatusToString(newTask.Status) ?? "",
+                        Tags = vm.DialogTags == null ? "#общие" : vm.DialogTags,
+                        RecurrencePattern = "None"
+                    };
+                    
+                    await _grpcClient.CreateTaskAsync(request);
+                    await GetAllTasksFromDbAsync();
+                }
+                TasksUpdated?.Invoke();
             }
-            TasksUpdated?.Invoke();
-        }
+            catch (Exception ex)
+            {
+                _logger.Error($"Can`t create task - {ex}");
+            }            
+        }        
 
         [RelayCommand]
         private void OpenMonthTasks()
@@ -196,39 +240,48 @@ namespace DeskAssistant.ViewModels
         {
             _loggerHelper.LogEnteringTheMethod();
 
-            if (AllTasks == null)
-                return;
-
-            AllTasks.Clear();
-
-            var entities = await _taskService.GetAllTasksAsync();
-            foreach (var entity in entities)
+            try
             {
-                var taskModel = new CalendarTaskModel
+                if (AllTasks == null)
+                    return;
+
+                AllTasks.Clear();
+
+                var emptyRequest = new EmptyRequest();
+
+                var entities = await _grpcClient.GetAllTasksAsync(emptyRequest);
+                foreach (var entity in entities.Tasks)
                 {
-                    Id = entity.Id,
-                    Name = entity.Name,
-                    Description = entity.Description,
-                    DueDate = entity.DueDate,
-                    IsCompleted = entity.IsCompleted,
-                    Priority = entity.Priority,
-                    Category = entity.Category,
-                    Status = entity.Status,
-                    Tags = entity.Tags,
-                    CreatedDate = entity.CreatedDate,
-                    DueTime = entity.DueTime,
-                    ReminderTime = entity.ReminderTime,
-                    CompletedDate = entity.CompletedDate,
-                    IsRecurring = entity.IsRecurring,
-                    RecurrencePattern = entity.RecurrencePattern,
-                    Duration = entity.Duration
-                };
+                    var taskModel = new CalendarTaskModel
+                    {
+                        Id = string.IsNullOrEmpty(entity.Id) ? 0 : int.Parse(entity.Id),
+                        Name = entity.Name,
+                        Description = entity.Description,
+                        DueDate = DateOnly.Parse(entity.DueDate),
+                        IsCompleted = bool.Parse(entity.IsCompleted),
+                        Priority = _enumExtensions.PrioritiesLevelFromString(entity.Priority),
+                        Category = entity.Category,
+                        Status = _enumExtensions.StatusFromString(entity.Status),
+                        Tags = entity.Tags,
+                        CreatedDate = entity.CreatedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CreatedDate), DateTimeKind.Utc),
+                        DueTime = entity.DueTime == "" ? null : TimeSpan.Parse(entity.DueTime),
+                        ReminderTime = entity.ReminderTime == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.ReminderTime), DateTimeKind.Utc),
+                        CompletedDate = entity.CompletedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CompletedDate), DateTimeKind.Utc),
+                        IsRecurring = string.IsNullOrEmpty(entity.IsRecurring) ? false : bool.Parse(entity.IsRecurring),
+                        RecurrencePattern = entity.RecurrencePattern,
+                        Duration = entity.Duration == "" ? null : TimeSpan.Parse(entity.Duration)
+                    };
 
-                AllTasks.Add(taskModel);
+                    AllTasks.Add(taskModel);
+                }
+
+                GetTasksForWeekPeriod();
+                GetTasksForSelectedDate();
             }
-
-            GetTasksForWeekPeriod();
-            GetTasksForSelectedDate();
+            catch (Exception ex)
+            {
+                _logger.Error($"Can`t get all tasks from DB - [{ex}]");
+            }            
         }
 
         private void GetWeekPeriod()
@@ -259,10 +312,13 @@ namespace DeskAssistant.ViewModels
             {
                 if (selectedDate == today)
                 {
-                    task.Status = TaskStatus.InProgress;
+                    task.Status = TaskStatusEnum.InProgress;
                 }
 
-                _ = _taskService.UpdateTaskAsync(task, task.Status);
+                //_ = _taskService.UpdateTaskAsync(task, task.Status);
+
+                var request = CalendarTaskModelToGrpcTask(task);
+                _ = _grpcClient.UpdateTaskAsync(request);
                 SelectedDayTasks.Add(task);
             }
 
@@ -292,11 +348,11 @@ namespace DeskAssistant.ViewModels
 
                 if (dueDate == today && !task.IsCompleted)
                 {
-                    task.Status = TaskStatus.InProgress;
+                    task.Status = TaskStatusEnum.InProgress;
                 }
                 if (dueDate != today && !task.IsCompleted)
                 {
-                    task.Status = TaskStatus.Pending;
+                    task.Status = TaskStatusEnum.Pending;
                 }
                 if (dueDate >= today && dueDate <= WeekPeriod)
                 {
@@ -331,7 +387,29 @@ namespace DeskAssistant.ViewModels
 
             var result = await dialog.ShowAsync();
         }
+        
+        private TaskItem CalendarTaskModelToGrpcTask(CalendarTaskModel model)
+        {
+            return new TaskItem
+            {
+                Id = model.Id.ToString(),
+                Name = model.Name,
+                Description = model.Description,
+                DueDate = model.DueDate.ToString("yyyy-MM-dd"),
+                IsCompleted = model.IsCompleted.ToString(),
+                Priority = _enumExtensions.PrioritiesLevelToString(model.Priority),
+                Category = model.Category,
+                Status = _enumExtensions.StatusToString(model.Status),
+                Tags = model.Tags,
+                CreatedDate = model.CreatedDate.ToString(),
+                DueTime = model.DueTime.ToString(),
+                ReminderTime = model.ReminderTime.ToString(),
+                CompletedDate = model.CompletedDate.ToString(),
+                IsRecurring = model.IsRecurring.ToString(),
+                RecurrencePattern = "None",
+                Duration = model.Duration.ToString()
 
-
+            };
+        }
     }
 }

@@ -1,4 +1,4 @@
-using DeskAssistant.Models;
+using DeskAssistant.Core.Models;
 using DeskAssistant.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
