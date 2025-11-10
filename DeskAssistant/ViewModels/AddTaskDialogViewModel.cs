@@ -22,9 +22,9 @@ namespace DeskAssistant.ViewModels
         public partial string DialogTags { get; set; }
 
         [ObservableProperty]
-        public partial PrioritiesLevel DialogPriority { get; set; }
+        public partial PrioritiesLevelEnum DialogPriority { get; set; }
 
-        public Array PrioritiesOptions => Enum.GetValues(typeof(PrioritiesLevel));        
+        public Array PrioritiesOptions => Enum.GetValues(typeof(PrioritiesLevelEnum));        
 
         public List<string> DialogCategories { get; } = new() { "Обеды", "Работа", "Дом", "Здоровье", "Учёба", "Развлечения", "Разное" };
 
@@ -69,7 +69,7 @@ namespace DeskAssistant.ViewModels
             {
                 DialogName = "Заказ обеда";
                 DialogDescription = "Комплекс № - ";
-                DialogPriority = PrioritiesLevel.Средний;
+                DialogPriority = PrioritiesLevelEnum.Средний;
             }
         }
     }

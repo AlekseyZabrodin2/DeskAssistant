@@ -8,17 +8,17 @@ namespace DeskAssistant.Converters
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            if (value is PrioritiesLevel priority)
+            if (value is PrioritiesLevelEnum priority)
             {
                 switch (priority)
                 {
-                    case PrioritiesLevel.Высокий:
+                    case PrioritiesLevelEnum.Высокий:
                         return new SolidColorBrush(Colors.Red);
 
-                    case PrioritiesLevel.Средний:
+                    case PrioritiesLevelEnum.Средний:
                         return new SolidColorBrush(Colors.Orange);
 
-                    case PrioritiesLevel.Низкий:
+                    case PrioritiesLevelEnum.Низкий:
                         return new SolidColorBrush(Colors.YellowGreen);
 
                     default:
