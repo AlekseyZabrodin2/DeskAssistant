@@ -24,9 +24,9 @@ namespace DeskAssistant.ViewModels
         private EnumExtensions _enumExtensions = new();
 
         // gRPC сервер в debug запускается на порту 5000
-        private readonly GrpcChannel _grpcChannel = GrpcChannel.ForAddress("http://localhost:5000");
+        private readonly GrpcChannel _grpcChannelDebug = GrpcChannel.ForAddress("http://localhost:5000");
         // gRPC сервер в release запускается на порту 5218
-        //private readonly GrpcChannel _grpcChannel = GrpcChannel.ForAddress("http://localhost:5218");
+        private readonly GrpcChannel _grpcChannelRelease = GrpcChannel.ForAddress("http://localhost:5218");
 
         public string LableForTodayTasks
         {
@@ -69,9 +69,28 @@ namespace DeskAssistant.ViewModels
 
         public CalendarViewModel()
         {
-            _logger.Info($"gRPC client started with - [{_grpcChannel}] address");
 
-            _grpcClient = new TaskService.TaskServiceClient(_grpcChannel);
+            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                   ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                   ?? "Production";
+
+            _logger.Info($"Application environment: {environment}");
+
+            switch (environment.ToLower())
+            {
+                case "development":
+                    _logger.Info($"gRPC client started in [{environment.ToLower()}] with - [{_grpcChannelDebug.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelDebug);
+                    break;
+                case "production":
+                    _logger.Info($"gRPC client started in [{environment.ToLower()}] with - [{_grpcChannelRelease.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);                     
+                    break;
+                default:
+                    _logger.Info($"gRPC client started in DEFAULT [{environment.ToLower()}] environment, with - [{_grpcChannelRelease.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
+                    break;
+            }
 
             AllTasks = new();
             WeekTasks = new();
