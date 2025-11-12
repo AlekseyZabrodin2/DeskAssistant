@@ -267,9 +267,12 @@ namespace DeskAssistant.ViewModels
         }        
 
         [RelayCommand]
-        private void OpenMonthTasks()
+        private async Task OpenMonthTasks()
         {
+            await GetAllTasksFromDbAsync();
+
             MonthTasks.Clear();
+
             MonthTasks = new ObservableCollection<CalendarTaskModel>(
                 AllTasks.Where(task => task.DueDate.Month == DateTime.Now.Month
                 && task.DueDate.Year == DateTime.Now.Year));
