@@ -6,7 +6,9 @@ using DeskAssistant.Helpers;
 using DeskAssistant.Views;
 using Grpc.Net.Client;
 using GrpcService;
+using Microsoft.UI;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using NLog;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -20,7 +22,7 @@ namespace DeskAssistant.ViewModels
         private Frame _contentFrame;
         public event Action? TasksUpdated;
         private LoggerHelper _loggerHelper = new();
-        private readonly TaskService.TaskServiceClient _grpcClient;
+        private TaskService.TaskServiceClient _grpcClient;
         private EnumExtensions _enumExtensions = new();
 
         // gRPC сервер в debug запускается на порту 5000
@@ -54,6 +56,12 @@ namespace DeskAssistant.ViewModels
         public partial DateOnly WeekPeriod { get; set; }
 
         [ObservableProperty]
+        public partial string NotificationMessage { get; set; }
+
+        [ObservableProperty]
+        public partial Brush NotificationMessageBrush { get; set; }
+
+        [ObservableProperty]
         public partial CalendarTaskModel CalendarTaskModel { get; set; }
 
         [ObservableProperty]
@@ -69,28 +77,7 @@ namespace DeskAssistant.ViewModels
 
         public CalendarViewModel()
         {
-
-            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
-                   ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-                   ?? "Production";
-
-            _logger.Info($"Application environment: {environment}");
-
-            switch (environment.ToLower())
-            {
-                case "development":
-                    _logger.Info($"gRPC client started in [{environment.ToLower()}] with - [{_grpcChannelDebug.Target}] address");
-                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelDebug);
-                    break;
-                case "production":
-                    _logger.Info($"gRPC client started in [{environment.ToLower()}] with - [{_grpcChannelRelease.Target}] address");
-                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);                     
-                    break;
-                default:
-                    _logger.Info($"gRPC client started in DEFAULT [{environment.ToLower()}] environment, with - [{_grpcChannelRelease.Target}] address");
-                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
-                    break;
-            }
+            _grpcClient = GetAppEnvironment();
 
             AllTasks = new();
             WeekTasks = new();
@@ -114,6 +101,32 @@ namespace DeskAssistant.ViewModels
         public void InitializeFrame(Frame contentFrame)
         {
             _contentFrame = contentFrame;
+        }
+
+        private TaskService.TaskServiceClient GetAppEnvironment()
+        {
+            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                   ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                   ?? "Production";
+
+            _logger.Info($"Application environment: {environment}");
+
+            switch (environment.ToLower())
+            {
+                case "development":
+                    _logger.Info($"gRPC client started in [{environment.ToLower()}] with - [{_grpcChannelDebug.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelDebug);
+                    break;
+                case "production":
+                    _logger.Info($"gRPC client started in [{environment.ToLower()}] with - [{_grpcChannelRelease.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
+                    break;
+                default:
+                    _logger.Info($"gRPC client started in DEFAULT [{environment.ToLower()}] environment, with - [{_grpcChannelRelease.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
+                    break;
+            }
+            return _grpcClient;
         }
 
         private void OnTasksCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -165,7 +178,9 @@ namespace DeskAssistant.ViewModels
             }
             catch (Exception ex)
             {
-                _logger.Error($"Can`t update property - {ex}");
+                NotificationMessage = $"[ Can`t update property - {ex.InnerException?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
             }
         }
 
@@ -234,12 +249,17 @@ namespace DeskAssistant.ViewModels
                     
                     await _grpcClient.CreateTaskAsync(request);
                     await GetAllTasksFromDbAsync();
+
+                    NotificationMessage = "[ Task create successfully ]";
+                    NotificationMessageBrush = new SolidColorBrush(Colors.Green);
                 }
                 TasksUpdated?.Invoke();
             }
             catch (Exception ex)
             {
-                _logger.Error($"Can`t create task - {ex}");
+                NotificationMessage = $"[ Can`t create task - {ex.InnerException?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
             }            
         }        
 
@@ -296,10 +316,15 @@ namespace DeskAssistant.ViewModels
 
                 GetTasksForWeekPeriod();
                 GetTasksForSelectedDate();
+
+                NotificationMessage = "[ Get all tasks successfully ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Green);
             }
             catch (Exception ex)
             {
-                _logger.Error($"Can`t get all tasks from DB - [{ex}]");
+                NotificationMessage = $"[ Can`t get all tasks from DB - {ex.InnerException?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
             }            
         }
 
@@ -333,8 +358,6 @@ namespace DeskAssistant.ViewModels
                 {
                     task.Status = TaskStatusEnum.InProgress;
                 }
-
-                //_ = _taskService.UpdateTaskAsync(task, task.Status);
 
                 var request = CalendarTaskModelToGrpcTask(task);
                 _ = _grpcClient.UpdateTaskAsync(request);
@@ -385,13 +408,13 @@ namespace DeskAssistant.ViewModels
         {
             var dialogVm = new AddTaskDialogViewModel
             {
+                IsDoubleTapped = true,
+                IsComboBoxDropdown = false,
                 DialogName = task.Name,
                 DialogDescription = task.Description,
                 DialogDueDate = task.DueDate,
                 DialogPriority = task.Priority,
-                DialogCategory = task.Category,
-                IsDoubleTapped = true,
-                IsComboBoxDropdown = false
+                DialogCategory = task.Category                
             };
 
             var dialogControl = new AddTaskDialogControl(dialogVm);

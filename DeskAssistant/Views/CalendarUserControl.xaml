@@ -20,6 +20,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="3*" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="30" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
@@ -31,7 +32,7 @@
                 <CalendarView
                     x:Name="CalendarTaskUserControl"
                     Width="600"
-                    Height="450"
+                    Height="430"
                     Margin="10"
                     CalendarViewDayItemChanging="CalendarView_CalendarViewDayItemChanging"
                     FirstDayOfWeek="Monday"
@@ -77,7 +78,7 @@
             </StackPanel>
         </Border>
         <Border
-            Grid.Row="2"
+            Grid.Row="1"
             BorderBrush="White"
             BorderThickness="1">
             <ListView
@@ -228,6 +229,16 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
+        </Border>
+        <Border Grid.Row="2" Grid.ColumnSpan="2">
+            <StackPanel
+                Margin="10,5,0,0"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <TextBlock Margin="0,0,15,0" Text="Notification:" />
+                <TextBlock Foreground="{Binding NotificationMessageBrush}" Text="{Binding NotificationMessage}" />
+            </StackPanel>
+
         </Border>
     </Grid>
 </UserControl>
