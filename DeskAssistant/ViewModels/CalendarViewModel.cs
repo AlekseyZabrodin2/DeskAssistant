@@ -68,6 +68,9 @@ namespace DeskAssistant.ViewModels
         public partial ObservableCollection<CalendarTaskModel> AllTasks { get; set; }
 
         [ObservableProperty]
+        public partial ObservableCollection<CalendarTaskModel> MonthTasks { get; set; }
+
+        [ObservableProperty]
         public partial ObservableCollection<CalendarTaskModel> SelectedDayTasks { get; set; }
 
         [ObservableProperty]
@@ -80,6 +83,7 @@ namespace DeskAssistant.ViewModels
             _grpcClient = GetAppEnvironment();
 
             AllTasks = new();
+            MonthTasks = new();
             WeekTasks = new();
             SelectedDayTasks = new();
 
@@ -168,13 +172,12 @@ namespace DeskAssistant.ViewModels
 
                         await _grpcClient.UpdateTaskAsync(request);
                         await GetAllTasksFromDbAsync();
+                        GetTasksForSelectedDate();
+                        OnPropertyChanged(nameof(WeekTasks));
+                        OnPropertyChanged(nameof(LableForTodayTasks));
+                        OnPropertyChanged(nameof(LableForWeekTasks));
                     }
                 }
-
-                GetTasksForSelectedDate();
-                OnPropertyChanged(nameof(WeekTasks));
-                OnPropertyChanged(nameof(LableForTodayTasks));
-                OnPropertyChanged(nameof(LableForWeekTasks));
             }
             catch (Exception ex)
             {
@@ -266,6 +269,13 @@ namespace DeskAssistant.ViewModels
         [RelayCommand]
         private void OpenMonthTasks()
         {
+            MonthTasks.Clear();
+            MonthTasks = new ObservableCollection<CalendarTaskModel>(
+                AllTasks.Where(task => task.DueDate.Month == DateTime.Now.Month
+                && task.DueDate.Year == DateTime.Now.Year));
+
+            _logger.Info($"All tasks count - [{AllTasks.Count}], Month tasks count - [{MonthTasks.Count}] ");
+
             _contentFrame.Content = new MonthTasksUserControl(this);
         }
 
