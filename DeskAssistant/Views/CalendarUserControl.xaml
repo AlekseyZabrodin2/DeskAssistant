@@ -154,7 +154,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="3*" />
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="90" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock
                                     Grid.Column="0"
@@ -195,7 +195,7 @@
                                 <ColumnDefinition Width="2*" />
                                 <ColumnDefinition Width="2*" />
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="90" />
                             </Grid.ColumnDefinitions>
                             <TextBlock
                                 Grid.Column="0"
