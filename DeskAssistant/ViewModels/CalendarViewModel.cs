@@ -89,17 +89,15 @@ namespace DeskAssistant.ViewModels
 
             AllTasks.CollectionChanged += OnTasksCollectionChanged;
 
-            InitializeAsync();
+            _ = InitializeAsync();
         }
 
-        private void InitializeAsync()
+        private async Task InitializeAsync()
         {
             _loggerHelper.LogEnteringTheMethod();
-
-            SelectedDate = DateOnly.FromDateTime(DateTime.Today);
-
-            _ = GetAllTasksFromDbAsync();
-            GetWeekPeriod();        
+            
+            GetWeekPeriodAndSelectedDate();
+            await GetAllTasksFromDbAsync();
         }
 
         public void InitializeFrame(Frame contentFrame)
@@ -166,7 +164,7 @@ namespace DeskAssistant.ViewModels
                     if (task != null)
                     {
                         task.CompletedDate = DateTime.UtcNow;
-                        task.Status = TaskStatusEnum.Completed;
+                        task.Status = _enumExtensions.StatusToString(TaskStatusEnum.Completed);
 
                         var request = CalendarTaskModelToGrpcTask(task);
 
@@ -226,6 +224,12 @@ namespace DeskAssistant.ViewModels
                         Tags = vm.DialogTags == null ? "#общие" : vm.DialogTags,
                         RecurrencePattern = "None"
                     };
+
+                    var today = DateOnly.FromDateTime(DateTime.Today);
+                    if (newTask.DueDate < today && !newTask.IsCompleted)
+                    {
+                        newTask.Status = TaskStatusEnum.Expired;
+                    }
 
                     if (string.IsNullOrEmpty(vm.DialogName) ||
                         string.IsNullOrEmpty(vm.DialogDescription))
@@ -294,37 +298,10 @@ namespace DeskAssistant.ViewModels
 
             try
             {
-                if (AllTasks == null)
-                    return;
-
-                AllTasks.Clear();
-
-                var emptyRequest = new EmptyRequest();
-
-                var entities = await _grpcClient.GetAllTasksAsync(emptyRequest);
-                foreach (var entity in entities.Tasks)
+                bool getTasks = await GetTasksFromDb();
+                if (!getTasks)
                 {
-                    var taskModel = new CalendarTaskModel
-                    {
-                        Id = string.IsNullOrEmpty(entity.Id) ? 0 : int.Parse(entity.Id),
-                        Name = entity.Name,
-                        Description = entity.Description,
-                        DueDate = DateOnly.Parse(entity.DueDate),
-                        IsCompleted = bool.Parse(entity.IsCompleted),
-                        Priority = _enumExtensions.PrioritiesLevelFromString(entity.Priority),
-                        Category = entity.Category,
-                        Status = _enumExtensions.StatusFromString(entity.Status),
-                        Tags = entity.Tags,
-                        CreatedDate = entity.CreatedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CreatedDate), DateTimeKind.Utc),
-                        DueTime = entity.DueTime == "" ? null : TimeSpan.Parse(entity.DueTime),
-                        ReminderTime = entity.ReminderTime == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.ReminderTime), DateTimeKind.Utc),
-                        CompletedDate = entity.CompletedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CompletedDate), DateTimeKind.Utc),
-                        IsRecurring = string.IsNullOrEmpty(entity.IsRecurring) ? false : bool.Parse(entity.IsRecurring),
-                        RecurrencePattern = entity.RecurrencePattern,
-                        Duration = entity.Duration == "" ? null : TimeSpan.Parse(entity.Duration)
-                    };
-
-                    AllTasks.Add(taskModel);
+                    return;
                 }
 
                 GetTasksForWeekPeriod();
@@ -341,9 +318,51 @@ namespace DeskAssistant.ViewModels
             }            
         }
 
-        private void GetWeekPeriod()
+        private async Task<bool> GetTasksFromDb()
+        {
+            if (AllTasks == null)
+                return false;
+
+            AllTasks.Clear();
+
+            var emptyRequest = new EmptyRequest();
+
+            var entities = await _grpcClient.GetAllTasksAsync(emptyRequest);
+            foreach (var entity in entities.Tasks)
+            {
+                var taskModel = new CalendarTaskModel
+                {
+                    Id = string.IsNullOrEmpty(entity.Id) ? 0 : int.Parse(entity.Id),
+                    Name = entity.Name,
+                    Description = entity.Description,
+                    DueDate = DateOnly.Parse(entity.DueDate),
+                    IsCompleted = bool.Parse(entity.IsCompleted),
+                    Priority = _enumExtensions.PrioritiesLevelFromString(entity.Priority),
+                    Category = entity.Category,
+                    Status = entity.Status,
+                    Tags = entity.Tags,
+                    CreatedDate = entity.CreatedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CreatedDate), DateTimeKind.Utc),
+                    DueTime = entity.DueTime == "" ? null : TimeSpan.Parse(entity.DueTime),
+                    ReminderTime = entity.ReminderTime == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.ReminderTime), DateTimeKind.Utc),
+                    CompletedDate = entity.CompletedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CompletedDate), DateTimeKind.Utc),
+                    IsRecurring = string.IsNullOrEmpty(entity.IsRecurring) ? false : bool.Parse(entity.IsRecurring),
+                    RecurrencePattern = entity.RecurrencePattern,
+                    Duration = entity.Duration == "" ? null : TimeSpan.Parse(entity.Duration)
+                };
+
+                AllTasks.Add(taskModel);
+            }
+
+            await RefreshExpiredTasksAsync();
+
+            return true;
+        }
+
+        private void GetWeekPeriodAndSelectedDate()
         {
             _loggerHelper.LogEnteringTheMethod();
+
+            SelectedDate = DateOnly.FromDateTime(DateTime.Today);
 
             int daysUntilSunday = ((int)DayOfWeek.Sunday - (int)DateTime.Today.DayOfWeek + 7) % 7;
             WeekPeriod = DateOnly.FromDateTime(DateTime.Today).AddDays(daysUntilSunday);
@@ -369,7 +388,7 @@ namespace DeskAssistant.ViewModels
             {
                 if (selectedDate == today)
                 {
-                    task.Status = TaskStatusEnum.InProgress;
+                    task.Status = _enumExtensions.StatusToString(TaskStatusEnum.InProgress);
                 }
 
                 var request = CalendarTaskModelToGrpcTask(task);
@@ -381,7 +400,6 @@ namespace DeskAssistant.ViewModels
 
             TasksUpdated?.Invoke();
         }
-
 
         public void GetTasksForWeekPeriod()
         {
@@ -403,11 +421,11 @@ namespace DeskAssistant.ViewModels
 
                 if (dueDate == today && !task.IsCompleted)
                 {
-                    task.Status = TaskStatusEnum.InProgress;
+                    task.Status = _enumExtensions.StatusToString(TaskStatusEnum.InProgress);
                 }
-                if (dueDate != today && !task.IsCompleted)
+                if (dueDate >= today && !task.IsCompleted)
                 {
-                    task.Status = TaskStatusEnum.Pending;
+                    task.Status = _enumExtensions.StatusToString(TaskStatusEnum.Pending);
                 }
                 if (dueDate >= today && dueDate <= WeekPeriod)
                 {
@@ -415,6 +433,34 @@ namespace DeskAssistant.ViewModels
                 }
             }
             WeekTasksCount = WeekTasks.Count;
+        }
+
+        private async Task RefreshExpiredTasksAsync()
+        {
+            try
+            {
+                var tasks = AllTasks.ToList();
+
+                foreach (var task in tasks)
+                {
+                    var dueDate = task.DueDate;
+                    var today = DateOnly.FromDateTime(DateTime.Today);
+
+                    if (dueDate < today && !task.IsCompleted)
+                    {
+                        task.Status = _enumExtensions.StatusToString(TaskStatusEnum.Expired);
+
+                        var request = CalendarTaskModelToGrpcTask(task);
+                        await _grpcClient.UpdateTaskAsync(request);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                NotificationMessage = $"[ Error checking expired tasks - {ex.InnerException?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
+            }            
         }
 
         public async Task OpenTaskDetails(CalendarTaskModel task)
@@ -454,7 +500,7 @@ namespace DeskAssistant.ViewModels
                 IsCompleted = model.IsCompleted.ToString(),
                 Priority = _enumExtensions.PrioritiesLevelToString(model.Priority),
                 Category = model.Category,
-                Status = _enumExtensions.StatusToString(model.Status),
+                Status = model.Status,
                 Tags = model.Tags,
                 CreatedDate = model.CreatedDate.ToString(),
                 DueTime = model.DueTime.ToString(),
