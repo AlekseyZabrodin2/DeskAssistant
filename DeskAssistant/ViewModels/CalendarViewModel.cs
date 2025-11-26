@@ -6,7 +6,9 @@ using DeskAssistant.Helpers;
 using DeskAssistant.Views;
 using Grpc.Net.Client;
 using GrpcService;
+using Microsoft.UI;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using NLog;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -20,13 +22,13 @@ namespace DeskAssistant.ViewModels
         private Frame _contentFrame;
         public event Action? TasksUpdated;
         private LoggerHelper _loggerHelper = new();
-        private readonly TaskService.TaskServiceClient _grpcClient;
+        private TaskService.TaskServiceClient _grpcClient;
         private EnumExtensions _enumExtensions = new();
 
         // gRPC сервер в debug запускается на порту 5000
-        private readonly GrpcChannel _grpcChannel = GrpcChannel.ForAddress("http://localhost:5000");
+        private readonly GrpcChannel _grpcChannelDebug = GrpcChannel.ForAddress("http://localhost:5000");
         // gRPC сервер в release запускается на порту 5218
-        //private readonly GrpcChannel _grpcChannel = GrpcChannel.ForAddress("http://localhost:5218");
+        private readonly GrpcChannel _grpcChannelRelease = GrpcChannel.ForAddress("http://localhost:5218");
 
         public string LableForTodayTasks
         {
@@ -54,10 +56,19 @@ namespace DeskAssistant.ViewModels
         public partial DateOnly WeekPeriod { get; set; }
 
         [ObservableProperty]
+        public partial string NotificationMessage { get; set; }
+
+        [ObservableProperty]
+        public partial Brush NotificationMessageBrush { get; set; }
+
+        [ObservableProperty]
         public partial CalendarTaskModel CalendarTaskModel { get; set; }
 
         [ObservableProperty]
         public partial ObservableCollection<CalendarTaskModel> AllTasks { get; set; }
+
+        [ObservableProperty]
+        public partial ObservableCollection<CalendarTaskModel> MonthTasks { get; set; }
 
         [ObservableProperty]
         public partial ObservableCollection<CalendarTaskModel> SelectedDayTasks { get; set; }
@@ -69,32 +80,55 @@ namespace DeskAssistant.ViewModels
 
         public CalendarViewModel()
         {
-            _logger.Info($"gRPC client started with - [{_grpcChannel}] address");
-
-            _grpcClient = new TaskService.TaskServiceClient(_grpcChannel);
+            _grpcClient = GetAppEnvironment();
 
             AllTasks = new();
+            MonthTasks = new();
             WeekTasks = new();
             SelectedDayTasks = new();
 
             AllTasks.CollectionChanged += OnTasksCollectionChanged;
 
-            InitializeAsync();
+            _ = InitializeAsync();
         }
 
-        private void InitializeAsync()
+        private async Task InitializeAsync()
         {
             _loggerHelper.LogEnteringTheMethod();
-
-            SelectedDate = DateOnly.FromDateTime(DateTime.Today);
-
-            _ = GetAllTasksFromDbAsync();
-            GetWeekPeriod();        
+            
+            GetWeekPeriodAndSelectedDate();
+            await GetAllTasksFromDbAsync();
         }
 
         public void InitializeFrame(Frame contentFrame)
         {
             _contentFrame = contentFrame;
+        }
+
+        private TaskService.TaskServiceClient GetAppEnvironment()
+        {
+            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                   ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                   ?? "Production";
+
+            _logger.Info($"Application environment: {environment}");
+
+            switch (environment.ToLower())
+            {
+                case "development":
+                    _logger.Info($"gRPC client started in [{environment.ToLower()}] with - [{_grpcChannelDebug.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelDebug);
+                    break;
+                case "production":
+                    _logger.Info($"gRPC client started in [{environment.ToLower()}] with - [{_grpcChannelRelease.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
+                    break;
+                default:
+                    _logger.Info($"gRPC client started in DEFAULT [{environment.ToLower()}] environment, with - [{_grpcChannelRelease.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
+                    break;
+            }
+            return _grpcClient;
         }
 
         private void OnTasksCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -130,23 +164,24 @@ namespace DeskAssistant.ViewModels
                     if (task != null)
                     {
                         task.CompletedDate = DateTime.UtcNow;
-                        task.Status = TaskStatusEnum.Completed;
+                        task.Status = _enumExtensions.StatusToString(TaskStatusEnum.Completed);
 
                         var request = CalendarTaskModelToGrpcTask(task);
 
                         await _grpcClient.UpdateTaskAsync(request);
                         await GetAllTasksFromDbAsync();
+                        GetTasksForSelectedDate();
+                        OnPropertyChanged(nameof(WeekTasks));
+                        OnPropertyChanged(nameof(LableForTodayTasks));
+                        OnPropertyChanged(nameof(LableForWeekTasks));
                     }
                 }
-
-                GetTasksForSelectedDate();
-                OnPropertyChanged(nameof(WeekTasks));
-                OnPropertyChanged(nameof(LableForTodayTasks));
-                OnPropertyChanged(nameof(LableForWeekTasks));
             }
             catch (Exception ex)
             {
-                _logger.Error($"Can`t update property - {ex}");
+                NotificationMessage = $"[ Can`t update property - {ex.InnerException?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
             }
         }
 
@@ -190,6 +225,12 @@ namespace DeskAssistant.ViewModels
                         RecurrencePattern = "None"
                     };
 
+                    var today = DateOnly.FromDateTime(DateTime.Today);
+                    if (newTask.DueDate < today && !newTask.IsCompleted)
+                    {
+                        newTask.Status = TaskStatusEnum.Expired;
+                    }
+
                     if (string.IsNullOrEmpty(vm.DialogName) ||
                         string.IsNullOrEmpty(vm.DialogDescription))
                         return;
@@ -204,7 +245,7 @@ namespace DeskAssistant.ViewModels
                         Name = newTask.Name ?? "",
                         Description = newTask.Description ?? "",
                         CreatedDate = newTask.CreatedDate.ToString() ?? "",
-                        DueDate = newTask.DueDate.ToString("yyyy-MM-dd") ?? "",
+                        DueDate = newTask.DueDate.ToString("dd.MM.yyyy") ?? "",
                         Priority = _enumExtensions.PrioritiesLevelToString(newTask.Priority) ?? "",
                         Category = newTask.Category ?? "",
                         IsCompleted = newTask.IsCompleted.ToString() ?? "",
@@ -215,18 +256,33 @@ namespace DeskAssistant.ViewModels
                     
                     await _grpcClient.CreateTaskAsync(request);
                     await GetAllTasksFromDbAsync();
+
+                    NotificationMessage = "[ Task create successfully ]";
+                    NotificationMessageBrush = new SolidColorBrush(Colors.Green);
                 }
                 TasksUpdated?.Invoke();
             }
             catch (Exception ex)
             {
-                _logger.Error($"Can`t create task - {ex}");
+                NotificationMessage = $"[ Can`t create task - {ex.InnerException?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
             }            
         }        
 
         [RelayCommand]
-        private void OpenMonthTasks()
+        private async Task OpenMonthTasks()
         {
+            await GetAllTasksFromDbAsync();
+
+            MonthTasks.Clear();
+
+            MonthTasks = new ObservableCollection<CalendarTaskModel>(
+                AllTasks.Where(task => task.DueDate.Month == DateTime.Now.Month
+                && task.DueDate.Year == DateTime.Now.Year));
+
+            _logger.Info($"All tasks count - [{AllTasks.Count}], Month tasks count - [{MonthTasks.Count}] ");
+
             _contentFrame.Content = new MonthTasksUserControl(this);
         }
 
@@ -242,51 +298,71 @@ namespace DeskAssistant.ViewModels
 
             try
             {
-                if (AllTasks == null)
-                    return;
-
-                AllTasks.Clear();
-
-                var emptyRequest = new EmptyRequest();
-
-                var entities = await _grpcClient.GetAllTasksAsync(emptyRequest);
-                foreach (var entity in entities.Tasks)
+                bool getTasks = await GetTasksFromDb();
+                if (!getTasks)
                 {
-                    var taskModel = new CalendarTaskModel
-                    {
-                        Id = string.IsNullOrEmpty(entity.Id) ? 0 : int.Parse(entity.Id),
-                        Name = entity.Name,
-                        Description = entity.Description,
-                        DueDate = DateOnly.Parse(entity.DueDate),
-                        IsCompleted = bool.Parse(entity.IsCompleted),
-                        Priority = _enumExtensions.PrioritiesLevelFromString(entity.Priority),
-                        Category = entity.Category,
-                        Status = _enumExtensions.StatusFromString(entity.Status),
-                        Tags = entity.Tags,
-                        CreatedDate = entity.CreatedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CreatedDate), DateTimeKind.Utc),
-                        DueTime = entity.DueTime == "" ? null : TimeSpan.Parse(entity.DueTime),
-                        ReminderTime = entity.ReminderTime == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.ReminderTime), DateTimeKind.Utc),
-                        CompletedDate = entity.CompletedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CompletedDate), DateTimeKind.Utc),
-                        IsRecurring = string.IsNullOrEmpty(entity.IsRecurring) ? false : bool.Parse(entity.IsRecurring),
-                        RecurrencePattern = entity.RecurrencePattern,
-                        Duration = entity.Duration == "" ? null : TimeSpan.Parse(entity.Duration)
-                    };
-
-                    AllTasks.Add(taskModel);
+                    return;
                 }
 
                 GetTasksForWeekPeriod();
                 GetTasksForSelectedDate();
+
+                NotificationMessage = "[ Get all tasks successfully ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Green);
             }
             catch (Exception ex)
             {
-                _logger.Error($"Can`t get all tasks from DB - [{ex}]");
+                NotificationMessage = $"[ Can`t get all tasks from DB - {ex.InnerException?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
             }            
         }
 
-        private void GetWeekPeriod()
+        private async Task<bool> GetTasksFromDb()
+        {
+            if (AllTasks == null)
+                return false;
+
+            AllTasks.Clear();
+
+            var emptyRequest = new EmptyRequest();
+
+            var entities = await _grpcClient.GetAllTasksAsync(emptyRequest);
+            foreach (var entity in entities.Tasks)
+            {
+                var taskModel = new CalendarTaskModel
+                {
+                    Id = string.IsNullOrEmpty(entity.Id) ? 0 : int.Parse(entity.Id),
+                    Name = entity.Name,
+                    Description = entity.Description,
+                    DueDate = DateOnly.Parse(entity.DueDate),
+                    IsCompleted = bool.Parse(entity.IsCompleted),
+                    Priority = _enumExtensions.PrioritiesLevelFromString(entity.Priority),
+                    Category = entity.Category,
+                    Status = entity.Status,
+                    Tags = entity.Tags,
+                    CreatedDate = entity.CreatedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CreatedDate), DateTimeKind.Utc),
+                    DueTime = entity.DueTime == "" ? null : TimeSpan.Parse(entity.DueTime),
+                    ReminderTime = entity.ReminderTime == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.ReminderTime), DateTimeKind.Utc),
+                    CompletedDate = entity.CompletedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CompletedDate), DateTimeKind.Utc),
+                    IsRecurring = string.IsNullOrEmpty(entity.IsRecurring) ? false : bool.Parse(entity.IsRecurring),
+                    RecurrencePattern = entity.RecurrencePattern,
+                    Duration = entity.Duration == "" ? null : TimeSpan.Parse(entity.Duration)
+                };
+
+                AllTasks.Add(taskModel);
+            }
+
+            await RefreshExpiredTasksAsync();
+
+            return true;
+        }
+
+        private void GetWeekPeriodAndSelectedDate()
         {
             _loggerHelper.LogEnteringTheMethod();
+
+            SelectedDate = DateOnly.FromDateTime(DateTime.Today);
 
             int daysUntilSunday = ((int)DayOfWeek.Sunday - (int)DateTime.Today.DayOfWeek + 7) % 7;
             WeekPeriod = DateOnly.FromDateTime(DateTime.Today).AddDays(daysUntilSunday);
@@ -312,10 +388,8 @@ namespace DeskAssistant.ViewModels
             {
                 if (selectedDate == today)
                 {
-                    task.Status = TaskStatusEnum.InProgress;
+                    task.Status = _enumExtensions.StatusToString(TaskStatusEnum.InProgress);
                 }
-
-                //_ = _taskService.UpdateTaskAsync(task, task.Status);
 
                 var request = CalendarTaskModelToGrpcTask(task);
                 _ = _grpcClient.UpdateTaskAsync(request);
@@ -326,7 +400,6 @@ namespace DeskAssistant.ViewModels
 
             TasksUpdated?.Invoke();
         }
-
 
         public void GetTasksForWeekPeriod()
         {
@@ -348,11 +421,11 @@ namespace DeskAssistant.ViewModels
 
                 if (dueDate == today && !task.IsCompleted)
                 {
-                    task.Status = TaskStatusEnum.InProgress;
+                    task.Status = _enumExtensions.StatusToString(TaskStatusEnum.InProgress);
                 }
-                if (dueDate != today && !task.IsCompleted)
+                if (dueDate >= today && !task.IsCompleted)
                 {
-                    task.Status = TaskStatusEnum.Pending;
+                    task.Status = _enumExtensions.StatusToString(TaskStatusEnum.Pending);
                 }
                 if (dueDate >= today && dueDate <= WeekPeriod)
                 {
@@ -362,17 +435,45 @@ namespace DeskAssistant.ViewModels
             WeekTasksCount = WeekTasks.Count;
         }
 
+        private async Task RefreshExpiredTasksAsync()
+        {
+            try
+            {
+                var tasks = AllTasks.ToList();
+
+                foreach (var task in tasks)
+                {
+                    var dueDate = task.DueDate;
+                    var today = DateOnly.FromDateTime(DateTime.Today);
+
+                    if (dueDate < today && !task.IsCompleted)
+                    {
+                        task.Status = _enumExtensions.StatusToString(TaskStatusEnum.Expired);
+
+                        var request = CalendarTaskModelToGrpcTask(task);
+                        await _grpcClient.UpdateTaskAsync(request);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                NotificationMessage = $"[ Error checking expired tasks - {ex.InnerException?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
+            }            
+        }
+
         public async Task OpenTaskDetails(CalendarTaskModel task)
         {
             var dialogVm = new AddTaskDialogViewModel
             {
+                IsDoubleTapped = true,
+                IsComboBoxDropdown = false,
                 DialogName = task.Name,
                 DialogDescription = task.Description,
                 DialogDueDate = task.DueDate,
                 DialogPriority = task.Priority,
-                DialogCategory = task.Category,
-                IsDoubleTapped = true,
-                IsComboBoxDropdown = false
+                DialogCategory = task.Category                
             };
 
             var dialogControl = new AddTaskDialogControl(dialogVm);
@@ -395,11 +496,11 @@ namespace DeskAssistant.ViewModels
                 Id = model.Id.ToString(),
                 Name = model.Name,
                 Description = model.Description,
-                DueDate = model.DueDate.ToString("yyyy-MM-dd"),
+                DueDate = model.DueDate.ToString("dd.MM.yyyy"),
                 IsCompleted = model.IsCompleted.ToString(),
                 Priority = _enumExtensions.PrioritiesLevelToString(model.Priority),
                 Category = model.Category,
-                Status = _enumExtensions.StatusToString(model.Status),
+                Status = model.Status,
                 Tags = model.Tags,
                 CreatedDate = model.CreatedDate.ToString(),
                 DueTime = model.DueTime.ToString(),

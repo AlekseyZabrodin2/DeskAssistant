@@ -37,7 +37,7 @@
                         CanFilterColumns="True"
                         DoubleTapped="ListView_DoubleTapped"
                         IsReadOnly="True"
-                        ItemsSource="{x:Bind ViewModel.AllTasks, Mode=OneWay}"
+                        ItemsSource="{x:Bind ViewModel.MonthTasks, Mode=OneWay}"
                         SelectionMode="Extended"
                         ShowExportOptions="True"
                         ShowOptionsButton="True">
@@ -66,7 +66,7 @@
                                 Binding="{Binding LocalCompletedDate}"
                                 Header="Completed Date" />
                             <table:TableViewTextColumn
-                                Width="100"
+                                Width="90"
                                 Binding="{Binding Priority}"
                                 Header="Priority" />
                             <table:TableViewTextColumn
@@ -74,7 +74,7 @@
                                 Binding="{Binding Category}"
                                 Header="Category" />
                             <table:TableViewTextColumn
-                                Width="100"
+                                Width="110"
                                 Binding="{Binding Status}"
                                 Header="Status" />
                         </table:TableView.Columns>

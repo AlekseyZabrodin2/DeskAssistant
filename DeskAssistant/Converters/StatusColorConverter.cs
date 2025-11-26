@@ -8,18 +8,21 @@ namespace DeskAssistant.Converters
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            if (value is TaskStatusEnum status)
+            if (value is string status)
             {
-                switch (status)
+                switch (status?.ToLower())
                 {
-                    case TaskStatusEnum.Pending:
+                    case "ожидание":
                         return new SolidColorBrush(Colors.Orange);
 
-                    case TaskStatusEnum.InProgress:
+                    case "выполняется":
                         return new SolidColorBrush(Colors.Green);
 
-                    case TaskStatusEnum.Completed:
+                    case "завершено":
                         return new SolidColorBrush(Colors.LightSkyBlue);
+
+                    case "просрочено":
+                        return new SolidColorBrush(Colors.DarkRed);
 
                     default:
                         return new SolidColorBrush(Colors.Gray);
