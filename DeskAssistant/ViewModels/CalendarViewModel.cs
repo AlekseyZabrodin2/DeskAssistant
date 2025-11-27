@@ -308,21 +308,21 @@ namespace DeskAssistant.ViewModels
                     _serverUrl = _grpcChannelDebug;
                     _logger.Info($"gRPC client trying to start in [{environment.ToLower()}] with - [{_serverUrl.Target}] address");
                     _grpcClient = new TaskService.TaskServiceClient(_grpcChannelDebug);
-                    DiagnosticsMessage = $"gRPC started with - [{_serverUrl.Target}] address";
+                    DiagnosticsMessage = $"gRPC trying start with - [{_serverUrl.Target}] address";
                     DiagnosticMessageBrush = new SolidColorBrush(Colors.Gray);
                     break;
                 case "production":
                     _serverUrl = _grpcChannelRelease;
                     _logger.Info($"gRPC client trying to start in [{environment.ToLower()}] with - [{_serverUrl.Target}] address");
                     _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
-                    DiagnosticsMessage = $"gRPC started with - [{_serverUrl.Target}] address";
+                    DiagnosticsMessage = $"gRPC trying start with - [{_serverUrl.Target}] address";
                     DiagnosticMessageBrush = new SolidColorBrush(Colors.Gray);
                     break;
                 default:
                     _serverUrl = _grpcChannelRelease;
                     _logger.Info($"gRPC client trying to start in DEFAULT [{environment.ToLower()}] environment, with - [{_serverUrl.Target}] address");
                     _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
-                    DiagnosticsMessage = $"gRPC started with - [{_serverUrl.Target}] address";
+                    DiagnosticsMessage = $"gRPC trying start with - [{_serverUrl.Target}] address";
                     DiagnosticMessageBrush = new SolidColorBrush(Colors.Gray);
                     break;
             }
