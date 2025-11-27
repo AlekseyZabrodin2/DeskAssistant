@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="DeskAssistant.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:DeskAssistant.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid x:Name="RootGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            x:Name="PageHeader"
+            Margin="36,30,36,0"
+            Style="{StaticResource TitleTextBlockStyle}"
+            Text="Settings" />
+
+        <ScrollViewer
+            x:Name="contentSV"
+            Grid.Row="1"
+            Margin="5"
+            Padding="36,0,36,0"
+            IsTabStop="False"
+            UseSystemFocusVisuals="False"
+            VerticalScrollBarVisibility="Auto"
+            VerticalScrollMode="Auto">
+
+            <StackPanel Spacing="10">
+                <StackPanel.ChildrenTransitions>
+                    <EntranceThemeTransition FromVerticalOffset="50" />
+                    <RepositionThemeTransition IsStaggeringEnabled="False" />
+                </StackPanel.ChildrenTransitions>
+
+                <TextBlock
+                    Margin="0,20,0,0"
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Text="Appearance &amp; behavior" />
+
+                <Border
+                    Padding="16"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <FontIcon
+                            Grid.Column="0"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Glyph="&#xE790;" />
+
+                        <StackPanel Grid.Column="1">
+                            <TextBlock
+                                FontWeight="SemiBold"
+                                Style="{StaticResource BaseTextBlockStyle}"
+                                Text="App theme" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="Select which app theme to display" />
+                        </StackPanel>
+
+                        <!--  ComboBox для выбора темы  -->
+                        <!--<ComboBox
+                            x:Name="themeMode"
+                            Grid.Column="2"
+                            MinWidth="120"
+                            AutomationProperties.AutomationId="themeModeComboBox"
+                            ItemsSource="{x:Bind ViewModel.ThemeModes}"
+                            SelectedItem="{x:Bind ViewModel.SelectedThemeMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />-->
+                    </Grid>
+                </Border>
+
+                <!--  О приложении  -->
+                <TextBlock
+                    Margin="0,20,0,0"
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Text="About" />
+
+                <Expander
+                    Padding="16"
+                    HorizontalAlignment="Stretch"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    IsExpanded="True">
+
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Image
+                                Grid.Column="0"
+                                Width="20"
+                                Height="20"
+                                Margin="0,0,12,0"
+                                Source="testIcon.ico" />
+
+                            <StackPanel Grid.Column="1">
+                                <TextBlock
+                                    Margin="0,10,0,5"
+                                    FontWeight="SemiBold"
+                                    Style="{StaticResource BaseTextBlockStyle}"
+                                    Text="Desk Assistant" />
+                                <TextBlock
+                                    Margin="0,5,0,10"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="© 2024 Zabrodin_DevTech. All rights reserved." />
+                            </StackPanel>
+                        </Grid>
+                    </Expander.Header>
+
+                    <StackPanel Spacing="8">
+                        <Grid
+                            Padding="12"
+                            Background="{ThemeResource SubtleFillColorTransparentBrush}"
+                            CornerRadius="4">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontWeight="SemiBold"
+                                Style="{StaticResource BaseTextBlockStyle}"
+                                Text="To clone this repository" />
+                            <Border
+                                Padding="8,4"
+                                HorizontalAlignment="Right"
+                                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                CornerRadius="4">
+                                <TextBlock
+                                    FontFamily="Consolas"
+                                    FontSize="12"
+                                    IsTextSelectionEnabled="True"
+                                    Text="git clone https://github.com/AlekseyZabrodin2/DeskAssistant" />
+                            </Border>
+                        </Grid>
+                        <Button
+                            x:Name="bugRequestButton"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Background="Transparent"
+                            BorderThickness="0">
+                            <Grid HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    Grid.Column="0"
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource BaseTextBlockStyle}"
+                                    Text="File a bug or request new sample" />
+                                <FontIcon
+                                    Grid.Column="1"
+                                    Margin="10,0,0,0"
+                                    VerticalAlignment="Center"
+                                    FontSize="12"
+                                    Glyph="&#xE8A7;" />
+                            </Grid>
+                        </Button>
+                        <Border
+                            Padding="16"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                            <StackPanel Spacing="12">
+                                <TextBlock
+                                    FontWeight="SemiBold"
+                                    Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                    Style="{StaticResource BaseTextBlockStyle}"
+                                    Text="Лицензия / License" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    LineHeight="18"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="THIS CODE AND INFORMATION IS PROVIDED 'AS IS' WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE."
+                                    TextWrapping="Wrap" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock
+                                        FontWeight="SemiBold"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="📄 Полный текст лицензии:" />
+                                    <HyperlinkButton Content="LICENSE файл в репозитории" NavigateUri="https://github.com/AlekseyZabrodin2/DeskAssistant/blob/main/LICENSE" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

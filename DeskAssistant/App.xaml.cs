@@ -89,10 +89,12 @@ namespace DeskAssistant
 
                         services.AddSingleton(this);
                         services.AddSingleton<ShellViewModel>();
+                        services.AddSingleton<SettingsPage>();
 
                         services.AddScoped<CalendarPage>();
                         services.AddScoped<CalendarViewModel>();
 
+                        services.AddTransient<SettingPageViewModel>();
                         services.AddTransient<ShellPage>();
                         services.AddTransient<BirthdayTrackerPage>();
                         services.AddTransient<BirthdayTrackerViewModel>();
