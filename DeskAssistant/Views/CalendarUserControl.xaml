@@ -9,6 +9,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:DeskAssistant.Models"
     xmlns:viewmodels="using:DeskAssistant.ViewModels"
+    d:DataContext="{d:DesignInstance Type=viewmodels:CalendarViewModel}"
     mc:Ignorable="d">
 
     <UserControl.Resources>
@@ -127,6 +128,7 @@
         <Border
             Grid.RowSpan="2"
             Grid.Column="1"
+            Margin="0,0,0,45"
             BorderBrush="White"
             BorderThickness="1">
             <ListView
@@ -230,6 +232,39 @@
                 </ListView.ItemTemplate>
             </ListView>
         </Border>
+        <Border
+            Grid.Row="1"
+            Grid.Column="1"
+            BorderBrush="White"
+            BorderThickness="0,0,1,1">
+            <StackPanel
+                Margin="5"
+                VerticalAlignment="Bottom"
+                Orientation="Horizontal"
+                Spacing="5">
+                <Button
+                    Width="65"
+                    Background="{Binding EchoDataBaseButtonBrush}"
+                    Command="{Binding GetEchoPgDataBaseCommand}"
+                    Content="PgSQL" />
+                <Button
+                    Width="65"
+                    Background="{Binding EchoServerButtonBrush}"
+                    Command="{Binding GetEchoGrpcServerCommand}"
+                    Content="gRPC" />
+                <Border
+                    Width="320"
+                    BorderBrush="White"
+                    BorderThickness="1,0,0,0">
+                    <TextBlock
+                        Margin="10,0,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding DiagnosticMessageBrush}"
+                        Text="{Binding DiagnosticsMessage}" />
+                </Border>
+            </StackPanel>
+        </Border>
         <Border Grid.Row="2" Grid.ColumnSpan="2">
             <StackPanel
                 Margin="10,10,0,0"
@@ -238,7 +273,6 @@
                 <TextBlock Margin="0,0,15,0" Text="Notification:" />
                 <TextBlock Foreground="{Binding NotificationMessageBrush}" Text="{Binding NotificationMessage}" />
             </StackPanel>
-
         </Border>
     </Grid>
 </UserControl>
