@@ -24,6 +24,7 @@ namespace DeskAssistant.ViewModels
         private LoggerHelper _loggerHelper = new();
         private TaskService.TaskServiceClient _grpcClient;
         private EnumExtensions _enumExtensions = new();
+        private GrpcChannel _serverUrl;
 
         // gRPC сервер в debug запускается на порту 5000
         private readonly GrpcChannel _grpcChannelDebug = GrpcChannel.ForAddress("http://localhost:5000");
@@ -59,7 +60,19 @@ namespace DeskAssistant.ViewModels
         public partial string NotificationMessage { get; set; }
 
         [ObservableProperty]
+        public partial string DiagnosticsMessage { get; set; }
+
+        [ObservableProperty]
         public partial Brush NotificationMessageBrush { get; set; }
+
+        [ObservableProperty]
+        public partial Brush DiagnosticMessageBrush { get; set; }
+
+        [ObservableProperty]
+        public partial Brush EchoServerButtonBrush { get; set; }
+
+        [ObservableProperty]
+        public partial Brush EchoDataBaseButtonBrush { get; set; }
 
         [ObservableProperty]
         public partial CalendarTaskModel CalendarTaskModel { get; set; }
@@ -95,7 +108,7 @@ namespace DeskAssistant.ViewModels
         private async Task InitializeAsync()
         {
             _loggerHelper.LogEnteringTheMethod();
-            
+
             GetWeekPeriodAndSelectedDate();
             await GetAllTasksFromDbAsync();
         }
@@ -105,31 +118,7 @@ namespace DeskAssistant.ViewModels
             _contentFrame = contentFrame;
         }
 
-        private TaskService.TaskServiceClient GetAppEnvironment()
-        {
-            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
-                   ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-                   ?? "Production";
-
-            _logger.Info($"Application environment: {environment}");
-
-            switch (environment.ToLower())
-            {
-                case "development":
-                    _logger.Info($"gRPC client started in [{environment.ToLower()}] with - [{_grpcChannelDebug.Target}] address");
-                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelDebug);
-                    break;
-                case "production":
-                    _logger.Info($"gRPC client started in [{environment.ToLower()}] with - [{_grpcChannelRelease.Target}] address");
-                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
-                    break;
-                default:
-                    _logger.Info($"gRPC client started in DEFAULT [{environment.ToLower()}] environment, with - [{_grpcChannelRelease.Target}] address");
-                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
-                    break;
-            }
-            return _grpcClient;
-        }
+        
 
         private void OnTasksCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
@@ -292,6 +281,58 @@ namespace DeskAssistant.ViewModels
             _contentFrame.Content = new CalendarUserControl(this);
         }
 
+        [RelayCommand]
+        private void GetEchoGrpcServer()
+        {
+            EchoServer();
+        }
+
+        [RelayCommand]
+        private void GetEchoPgDataBase()
+        {
+            EchoDataBase();
+        }
+
+
+        private TaskService.TaskServiceClient GetAppEnvironment()
+        {
+            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                   ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                   ?? "Production";
+
+            _logger.Info($"Application environment: {environment}");
+
+            switch (environment.ToLower())
+            {
+                case "development":
+                    _serverUrl = _grpcChannelDebug;
+                    _logger.Info($"gRPC client trying to start in [{environment.ToLower()}] with - [{_serverUrl.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelDebug);
+                    DiagnosticsMessage = $"gRPC started with - [{_serverUrl.Target}] address";
+                    DiagnosticMessageBrush = new SolidColorBrush(Colors.Gray);
+                    break;
+                case "production":
+                    _serverUrl = _grpcChannelRelease;
+                    _logger.Info($"gRPC client trying to start in [{environment.ToLower()}] with - [{_serverUrl.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
+                    DiagnosticsMessage = $"gRPC started with - [{_serverUrl.Target}] address";
+                    DiagnosticMessageBrush = new SolidColorBrush(Colors.Gray);
+                    break;
+                default:
+                    _serverUrl = _grpcChannelRelease;
+                    _logger.Info($"gRPC client trying to start in DEFAULT [{environment.ToLower()}] environment, with - [{_serverUrl.Target}] address");
+                    _grpcClient = new TaskService.TaskServiceClient(_grpcChannelRelease);
+                    DiagnosticsMessage = $"gRPC started with - [{_serverUrl.Target}] address";
+                    DiagnosticMessageBrush = new SolidColorBrush(Colors.Gray);
+                    break;
+            }
+
+            _ = EchoDataBase();
+            _ = EchoServer();
+
+            return _grpcClient;
+        }
+
         private async Task GetAllTasksFromDbAsync()
         {
             _loggerHelper.LogEnteringTheMethod();
@@ -299,10 +340,8 @@ namespace DeskAssistant.ViewModels
             try
             {
                 bool getTasks = await GetTasksFromDb();
-                if (!getTasks)
-                {
+                if (!getTasks) 
                     return;
-                }
 
                 GetTasksForWeekPeriod();
                 GetTasksForSelectedDate();
@@ -323,39 +362,38 @@ namespace DeskAssistant.ViewModels
             if (AllTasks == null)
                 return false;
 
-            AllTasks.Clear();
-
-            var emptyRequest = new EmptyRequest();
-
-            var entities = await _grpcClient.GetAllTasksAsync(emptyRequest);
-            foreach (var entity in entities.Tasks)
+            try
             {
-                var taskModel = new CalendarTaskModel
+                AllTasks.Clear();
+
+                var emptyRequest = new EmptyRequest();
+                var entities = await _grpcClient.GetAllTasksAsync(emptyRequest);
+                if (!entities.Success)
                 {
-                    Id = string.IsNullOrEmpty(entity.Id) ? 0 : int.Parse(entity.Id),
-                    Name = entity.Name,
-                    Description = entity.Description,
-                    DueDate = DateOnly.Parse(entity.DueDate),
-                    IsCompleted = bool.Parse(entity.IsCompleted),
-                    Priority = _enumExtensions.PrioritiesLevelFromString(entity.Priority),
-                    Category = entity.Category,
-                    Status = entity.Status,
-                    Tags = entity.Tags,
-                    CreatedDate = entity.CreatedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CreatedDate), DateTimeKind.Utc),
-                    DueTime = entity.DueTime == "" ? null : TimeSpan.Parse(entity.DueTime),
-                    ReminderTime = entity.ReminderTime == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.ReminderTime), DateTimeKind.Utc),
-                    CompletedDate = entity.CompletedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CompletedDate), DateTimeKind.Utc),
-                    IsRecurring = string.IsNullOrEmpty(entity.IsRecurring) ? false : bool.Parse(entity.IsRecurring),
-                    RecurrencePattern = entity.RecurrencePattern,
-                    Duration = entity.Duration == "" ? null : TimeSpan.Parse(entity.Duration)
-                };
+                    NotificationMessage = $"[ {entities?.Message} ]";
+                    NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                    _logger.Error(NotificationMessage);
+                    return false;
+                }
 
-                AllTasks.Add(taskModel);
+                foreach (var entity in entities.Tasks)
+                {
+                    var taskModel = TaskModelToCalendarTask(entity);
+                    AllTasks.Add(taskModel);
+                }
+
+                await RefreshExpiredTasksAsync();
+
+                return true;
             }
+            catch (Exception ex)
+            {
+                NotificationMessage = $"[ Can`t get all tasks from DB - {ex.InnerException?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
 
-            await RefreshExpiredTasksAsync();
-
-            return true;
+                return false;
+            }            
         }
 
         private void GetWeekPeriodAndSelectedDate()
@@ -488,7 +526,7 @@ namespace DeskAssistant.ViewModels
 
             var result = await dialog.ShowAsync();
         }
-        
+                
         private TaskItem CalendarTaskModelToGrpcTask(CalendarTaskModel model)
         {
             return new TaskItem
@@ -509,8 +547,103 @@ namespace DeskAssistant.ViewModels
                 IsRecurring = model.IsRecurring.ToString(),
                 RecurrencePattern = "None",
                 Duration = model.Duration.ToString()
-
             };
+        }
+
+        private CalendarTaskModel TaskModelToCalendarTask(TaskItem entity)
+        {
+            return new CalendarTaskModel
+            {
+                Id = string.IsNullOrEmpty(entity.Id) ? 0 : int.Parse(entity.Id),
+                Name = entity.Name,
+                Description = entity.Description,
+                DueDate = DateOnly.Parse(entity.DueDate),
+                IsCompleted = bool.Parse(entity.IsCompleted),
+                Priority = _enumExtensions.PrioritiesLevelFromString(entity.Priority),
+                Category = entity.Category,
+                Status = entity.Status,
+                Tags = entity.Tags,
+                CreatedDate = entity.CreatedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CreatedDate), DateTimeKind.Utc),
+                DueTime = entity.DueTime == "" ? null : TimeSpan.Parse(entity.DueTime),
+                ReminderTime = entity.ReminderTime == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.ReminderTime), DateTimeKind.Utc),
+                CompletedDate = entity.CompletedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CompletedDate), DateTimeKind.Utc),
+                IsRecurring = string.IsNullOrEmpty(entity.IsRecurring) ? false : bool.Parse(entity.IsRecurring),
+                RecurrencePattern = entity.RecurrencePattern,
+                Duration = entity.Duration == "" ? null : TimeSpan.Parse(entity.Duration)
+            };
+        }
+
+        private async Task<bool> EchoServer()
+        {
+            try
+            {
+                EchoServerButtonBrush = new SolidColorBrush(Colors.Gray);
+                var emptyRequest = new EmptyRequest();
+                var response = await _grpcClient.ServerEchoAsync(emptyRequest);
+                DiagnosticsMessage = $"{_serverUrl.Target} - {response.Message}";
+                EchoServerButtonBrush = new SolidColorBrush(Colors.Green);
+                DiagnosticMessageBrush = new SolidColorBrush(Colors.Green);
+
+                _ = InitializeAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                EchoServerButtonBrush = new SolidColorBrush(Colors.Red);
+                DiagnosticMessageBrush = new SolidColorBrush(Colors.Red);
+                DiagnosticsMessage = "gRPC Server is not available";
+                _logger.Error(ex, DiagnosticsMessage);
+
+                return false;
+            }
+        }
+
+        private async Task<bool> EchoDataBase()
+        {
+            try
+            {
+                EchoDataBaseButtonBrush = new SolidColorBrush(Colors.Gray);
+                var emptyRequest = new EmptyRequest();
+                var response = await _grpcClient.DataBaseEchoAsync(emptyRequest);
+                if (!response.Success)
+                {
+                    SetErrorState(response.Message);
+                    return false;
+                }
+
+                SetSuccessState(response.Message);
+
+                _ = InitializeAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                SetErrorState("Database connection failed", ex);
+                return false;
+            }
+        }
+
+        private void SetSuccessState(string message)
+        {
+            DiagnosticsMessage = $"{message}";
+            EchoDataBaseButtonBrush = new SolidColorBrush(Colors.Green);
+            DiagnosticMessageBrush = new SolidColorBrush(Colors.Green);
+        }
+
+        private void SetErrorState(string message, Exception ex = null)
+        {
+            EchoDataBaseButtonBrush = new SolidColorBrush(Colors.Red);
+            DiagnosticMessageBrush = new SolidColorBrush(Colors.Red);
+            DiagnosticsMessage = message;
+
+            _logger.Error(DiagnosticsMessage);
+
+            if (ex != null)
+                _logger.Error(ex, message);
+            else
+                _logger.Error(message);
         }
     }
 }
