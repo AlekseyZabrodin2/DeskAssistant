@@ -1,0 +1,65 @@
+﻿using DeskAssistant.Core.Models;
+using DeskAssistant.ViewModels;
+using NotificationGrpcClient;
+
+namespace DeskAssistant.Extensions
+{
+    public class NotificationItemExtensions
+    {
+        public NotificationItem NotificationEntityToNotificationItem(NotificationEntity notificationEntity)
+        {
+            return new NotificationItem
+            {
+                Id = notificationEntity.Id.ToString(),
+                ClientId = notificationEntity.ClientId.ToString(),
+                IsEnabled = notificationEntity.IsEnabled.ToString(),
+                NotificationTime = notificationEntity.NotificationTime.ToString(),
+                MondayEnabled = notificationEntity.MondayEnabled.ToString(),
+                TuesdayEnabled = notificationEntity.TuesdayEnabled.ToString(),
+                WednesdayEnabled = notificationEntity.WednesdayEnabled.ToString(),
+                ThursdayEnabled = notificationEntity.ThursdayEnabled.ToString(),
+                FridayEnabled = notificationEntity.FridayEnabled.ToString(),
+                SaturdayEnabled = notificationEntity.SaturdayEnabled.ToString(),
+                SundayEnabled = notificationEntity.SundayEnabled.ToString(),
+                CreatedAt = notificationEntity.CreatedAt.ToString("O")
+            };
+        }
+
+        public NotificationEntity GrpcNotificationItemToNotificationEntity(NotificationItem notificationItem)
+        {
+            return new NotificationEntity
+            {
+                Id = notificationItem.Id,
+                ClientId = notificationItem.ClientId,
+                IsEnabled = bool.Parse(notificationItem.IsEnabled),
+                NotificationTime = TimeSpan.Parse(notificationItem.NotificationTime),
+                MondayEnabled = bool.Parse(notificationItem.MondayEnabled),
+                TuesdayEnabled = bool.Parse(notificationItem.TuesdayEnabled),
+                WednesdayEnabled = bool.Parse(notificationItem.WednesdayEnabled),
+                ThursdayEnabled = bool.Parse(notificationItem.ThursdayEnabled),
+                FridayEnabled = bool.Parse(notificationItem.FridayEnabled),
+                SaturdayEnabled = bool.Parse(notificationItem.SaturdayEnabled),
+                SundayEnabled = bool.Parse(notificationItem.SundayEnabled),
+                CreatedAt = DateTime.Parse(notificationItem.CreatedAt)
+            };
+        }
+
+        public NotificationEntity SettingsToNotificationEntity(SettingPageViewModel viewModel)
+        {
+            return new NotificationEntity
+            {
+                ClientId = viewModel.ClientId,
+                IsEnabled = viewModel.NotificationIsOn,
+                NotificationTime = viewModel.SelectedTime,
+                MondayEnabled = viewModel.MondayIsChecked,
+                TuesdayEnabled = viewModel.TuesdayIsChecked,
+                WednesdayEnabled = viewModel.WednesdayIsChecked,
+                ThursdayEnabled = viewModel.ThursdayIsChecked,
+                FridayEnabled = viewModel.FridayIsChecked,
+                SaturdayEnabled = viewModel.SaturdayIsChecked,
+                SundayEnabled = viewModel.SundayIsChecked,
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+    }
+}
