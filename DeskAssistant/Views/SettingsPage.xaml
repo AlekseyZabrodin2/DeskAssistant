@@ -6,6 +6,9 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:DeskAssistant.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:DeskAssistant.Models"
+    xmlns:viewmodels="using:DeskAssistant.ViewModels"
+    d:DataContext="{d:DesignInstance Type=viewmodels:SettingPageViewModel}"
     mc:Ignorable="d">
 
     <Grid x:Name="RootGrid">
@@ -83,20 +86,19 @@
                     </Grid>
                 </Border>
 
-                <!--  О приложении  -->
                 <TextBlock
                     Margin="0,20,0,0"
                     Style="{StaticResource SubtitleTextBlockStyle}"
-                    Text="About" />
-
+                    Text="Notifications" />
                 <Expander
                     Padding="16"
                     HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
-                    IsExpanded="True">
+                    IsExpanded="False">
 
                     <Expander.Header>
                         <Grid>
@@ -106,12 +108,142 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <Image
+                            <FontIcon
                                 Grid.Column="0"
-                                Width="20"
-                                Height="20"
                                 Margin="0,0,12,0"
-                                Source="testIcon.ico" />
+                                VerticalAlignment="Center"
+                                FontSize="16"
+                                Glyph="&#xEA8F;" />
+
+                            <StackPanel Grid.Column="1">
+                                <TextBlock
+                                    Margin="0,10,0,5"
+                                    FontWeight="SemiBold"
+                                    Style="{StaticResource BaseTextBlockStyle}"
+                                    Text="Notifications settings" />
+                                <TextBlock
+                                    Margin="0,5,0,10"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="Morning tasks notifications" />
+                            </StackPanel>
+                        </Grid>
+                    </Expander.Header>
+
+                    <Grid HorizontalAlignment="Stretch">
+                        <Border
+                            Padding="16"
+                            HorizontalAlignment="Stretch"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                            <StackPanel HorizontalAlignment="Stretch" Spacing="12">
+
+                                <!--  Утренние уведомления  -->
+                                <ToggleSwitch
+                                    Header="Morning notifications"
+                                    IsOn="{Binding NotificationIsOn, Mode=TwoWay}"
+                                    OffContent="Disabled"
+                                    OnContent="Enabled" />
+
+                                <!--  Время уведомлений  -->
+                                <TimePicker
+                                    Margin="0,0,0,4"
+                                    ClockIdentifier="24HourClock"
+                                    Header="Notification time"
+                                    IsEnabled="True"
+                                    SelectedTime="{Binding SelectedTime}"
+                                    Time="{Binding NotificationTime, Mode=TwoWay}" />
+
+                                <!--  Дни недели  -->
+                                <StackPanel>
+                                    <TextBlock
+                                        Margin="0,0,0,4"
+                                        FontWeight="SemiBold"
+                                        Style="{StaticResource BaseTextBlockStyle}"
+                                        Text="Days of week" />
+
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <CheckBox
+                                            MinWidth="80"
+                                            Content="Пн"
+                                            IsChecked="{Binding MondayIsChecked, Mode=TwoWay}" />
+                                        <CheckBox
+                                            MinWidth="80"
+                                            Content="Вт"
+                                            IsChecked="{Binding TuesdayIsChecked, Mode=TwoWay}" />
+                                        <CheckBox
+                                            MinWidth="80"
+                                            Content="Ср"
+                                            IsChecked="{Binding WednesdayIsChecked, Mode=TwoWay}" />
+                                        <CheckBox
+                                            MinWidth="80"
+                                            Content="Чт"
+                                            IsChecked="{Binding ThursdayIsChecked, Mode=TwoWay}" />
+                                        <CheckBox
+                                            MinWidth="80"
+                                            Content="Пт"
+                                            IsChecked="{Binding FridayIsChecked, Mode=TwoWay}" />
+                                        <CheckBox
+                                            MinWidth="80"
+                                            Content="Сб"
+                                            IsChecked="{Binding SaturdayIsChecked, Mode=TwoWay}" />
+                                        <CheckBox
+                                            MinWidth="80"
+                                            Content="Вс"
+                                            IsChecked="{Binding SundayIsChecked, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <Button
+                                    Margin="0,4"
+                                    HorizontalAlignment="Right"
+                                    Command="{Binding SaveNotificationSettingsCommand}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <FontIcon
+                                            Grid.Column="0"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center"
+                                            FontSize="16"
+                                            Glyph="&#xE105;" />
+                                        <TextBlock Text="Save" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Expander>
+
+                <!--  О приложении  -->
+                <TextBlock
+                    Margin="0,20,0,0"
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Text="About" />
+
+                <Expander
+                    Padding="16"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    IsExpanded="False">
+
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <FontIcon
+                                Grid.Column="0"
+                                Margin="0,0,12,0"
+                                VerticalAlignment="Center"
+                                FontSize="16"
+                                Glyph="&#xE946;" />
 
                             <StackPanel Grid.Column="1">
                                 <TextBlock
