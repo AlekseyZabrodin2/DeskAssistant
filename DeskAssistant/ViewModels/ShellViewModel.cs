@@ -43,7 +43,7 @@ namespace DeskAssistant.ViewModels
 
             if (pageTag == "Settings")
             {
-                //frame.Navigate(typeof(SettingsPage));
+                frame.Navigate(typeof(SettingsPage));
             }
             else if (pageTag == "CalendarPage")
             {
