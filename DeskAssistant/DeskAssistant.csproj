@@ -62,7 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />    
-    <PackageReference Include="DeskAssistant.Core" Version="1.2.3" />
+    <PackageReference Include="DeskAssistant.Core" Version="1.2.4" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
      <PackageReference Include="MailKit" Version="4.11.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
