@@ -1,4 +1,5 @@
 ﻿using DeskAssistant.Core.Models;
+using DeskAssistant.Models;
 using DeskAssistant.ViewModels;
 using NotificationGrpcClient;
 
@@ -48,6 +49,7 @@ namespace DeskAssistant.Extensions
         {
             return new NotificationEntity
             {
+                Id = viewModel.NotificationId,
                 ClientId = viewModel.ClientId,
                 IsEnabled = viewModel.NotificationIsOn,
                 NotificationTime = viewModel.SelectedTime,
@@ -59,6 +61,26 @@ namespace DeskAssistant.Extensions
                 SaturdayEnabled = viewModel.SaturdayIsChecked,
                 SundayEnabled = viewModel.SundayIsChecked,
                 CreatedAt = DateTime.UtcNow
+            };
+        }
+
+        public NotificationItemStatus CollectionModelToNotificationItemStatus(NotificationsCollectionModel collectionModel)
+        {
+            return new NotificationItemStatus
+            {
+                Id = collectionModel.NotificationIdModel,
+                ClientId = collectionModel.ClientIdModel,
+                IsEnabled = collectionModel.NotificationIsOnModel.ToString()
+            };
+        }
+
+        public NotificationEntity CollectionModelToNotificationEntity(NotificationsCollectionModel collectionModel)
+        {
+            return new NotificationEntity
+            {
+                Id = collectionModel.NotificationIdModel,
+                ClientId = collectionModel.ClientIdModel,
+                IsEnabled = collectionModel.NotificationIsOnModel
             };
         }
     }
