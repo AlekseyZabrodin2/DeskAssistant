@@ -16,7 +16,7 @@ using System.ComponentModel;
 
 namespace DeskAssistant.ViewModels
 {
-    public partial class CalendarViewModel : ObservableObject, IDisposable
+    public partial class CalendarViewModel : ObservableObject
     {
         private static readonly ILogger _logger = LogManager.GetCurrentClassLogger();
         private Frame _contentFrame;
@@ -712,27 +712,6 @@ namespace DeskAssistant.ViewModels
             _grpcClient = new TaskService.TaskServiceClient(grpcChannel);
             DiagnosticsMessage = $"gRPC trying start with - [{grpcChannel.Target}] address";
             DiagnosticMessageBrush = new SolidColorBrush(Colors.Gray);
-        }
-
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                AllTasks.CollectionChanged -= OnTasksCollectionChanged;
-
-                // Отписываемся от всех событий PropertyChanged
-                foreach (var task in AllTasks)
-                {
-                    task.PropertyChanged -= OnTaskPropertyChanged;
-                }
-
-                _disposed = true;
-            }
-        }
-
-        ~CalendarViewModel()
-        {
-            Dispose();
         }
     }
 }
