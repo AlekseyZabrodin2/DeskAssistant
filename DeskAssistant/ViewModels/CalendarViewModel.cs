@@ -74,7 +74,19 @@ namespace DeskAssistant.ViewModels
         public partial Brush EchoServerButtonBrush { get; set; }
 
         [ObservableProperty]
+        public partial string ServerButtonIcon { get; set; }
+
+        [ObservableProperty]
         public partial Brush EchoDataBaseButtonBrush { get; set; }
+
+        [ObservableProperty]
+        public partial string DataBaseButtonIcon { get; set; }
+
+        [ObservableProperty]
+        public partial string NotificationsIcon { get; set; }
+
+        [ObservableProperty]
+        public partial Brush NotificationsIconBrush { get; set; }
 
         [ObservableProperty]
         public partial CalendarTaskModel CalendarTaskModel { get; set; }
@@ -93,6 +105,8 @@ namespace DeskAssistant.ViewModels
                 
         public AsyncRelayCommand? InitializeCommand { get; }
 
+        private readonly SettingPageViewModel _settingPageViewModel;
+
 
         public CalendarViewModel()
         {
@@ -102,6 +116,8 @@ namespace DeskAssistant.ViewModels
             MonthTasks = new();
             WeekTasks = new();
             SelectedDayTasks = new();
+
+            _settingPageViewModel = new();
 
             AllTasks.CollectionChanged += OnTasksCollectionChanged;
 
@@ -179,6 +195,8 @@ namespace DeskAssistant.ViewModels
                 _loggerHelper.LogEnteringTheMethod();
                 GetWeekPeriodAndSelectedDate();
                 await GetAllTasksFromDbAsync();
+
+                await CheckForNotifications();
             }
             catch (Exception ex)
             {
@@ -648,11 +666,11 @@ namespace DeskAssistant.ViewModels
             try
             {
                 EchoServerButtonBrush = new SolidColorBrush(Colors.Gray);
+                ServerButtonIcon = "\uEB63";
                 var emptyRequest = new EmptyRequest();
                 var response = await _grpcClient.ServerEchoAsync(emptyRequest);
-                DiagnosticsMessage = $"{_serverUrl.Target} - {response.Message}";
-                EchoServerButtonBrush = new SolidColorBrush(Colors.Green);
-                DiagnosticMessageBrush = new SolidColorBrush(Colors.Green);
+
+                SetSuccessServerState(response.Message);
 
                 _ = InitializeAsync();
 
@@ -660,11 +678,7 @@ namespace DeskAssistant.ViewModels
             }
             catch (Exception ex)
             {
-                EchoServerButtonBrush = new SolidColorBrush(Colors.Red);
-                DiagnosticMessageBrush = new SolidColorBrush(Colors.Red);
-                DiagnosticsMessage = "gRPC Server is not available";
-                _logger.Error(ex, DiagnosticsMessage);
-
+                SetErrorServerState(ex);
                 return false;
             }
         }
@@ -674,15 +688,16 @@ namespace DeskAssistant.ViewModels
             try
             {
                 EchoDataBaseButtonBrush = new SolidColorBrush(Colors.Gray);
+                DataBaseButtonIcon = "\uEB56";
                 var emptyRequest = new EmptyRequest();
                 var response = await _grpcClient.DataBaseEchoAsync(emptyRequest);
                 if (!response.Success)
                 {
-                    SetErrorState(response.Message);
+                    SetErrorDatabaseState(response.Message);
                     return false;
                 }
 
-                SetSuccessState(response.Message);
+                SetSuccessDatabaseState(response.Message);
 
                 _ = InitializeAsync();
 
@@ -690,21 +705,40 @@ namespace DeskAssistant.ViewModels
             }
             catch (Exception ex)
             {
-                SetErrorState("Database connection failed", ex);
+                SetErrorDatabaseState("Database connection failed", ex);
                 return false;
             }
         }
 
-        private void SetSuccessState(string message)
+        private void SetSuccessServerState(string message)
         {
-            DiagnosticsMessage = $"{message}";
-            EchoDataBaseButtonBrush = new SolidColorBrush(Colors.Green);
+            DiagnosticsMessage = $"{_serverUrl.Target} - {message}";
+            EchoServerButtonBrush = new SolidColorBrush(Colors.Green);
+            ServerButtonIcon = "\uE701";
             DiagnosticMessageBrush = new SolidColorBrush(Colors.Green);
         }
 
-        private void SetErrorState(string message, Exception ex = null)
+        private void SetErrorServerState(Exception ex)
+        {
+            EchoServerButtonBrush = new SolidColorBrush(Colors.Red);
+            ServerButtonIcon = "\uEB5E";
+            DiagnosticMessageBrush = new SolidColorBrush(Colors.Red);
+            DiagnosticsMessage = "gRPC Server is not available";
+            _logger.Error(ex, DiagnosticsMessage);
+        }
+
+        private void SetSuccessDatabaseState(string message)
+        {
+            DiagnosticsMessage = $"{message}";
+            EchoDataBaseButtonBrush = new SolidColorBrush(Colors.Green);
+            DataBaseButtonIcon = "\uE839";
+            DiagnosticMessageBrush = new SolidColorBrush(Colors.Green);
+        }
+
+        private void SetErrorDatabaseState(string message, Exception ex = null)
         {
             EchoDataBaseButtonBrush = new SolidColorBrush(Colors.Red);
+            DataBaseButtonIcon = "\uEB55";
             DiagnosticMessageBrush = new SolidColorBrush(Colors.Red);
             DiagnosticsMessage = message;
 
@@ -722,6 +756,23 @@ namespace DeskAssistant.ViewModels
             _grpcClient = new TaskService.TaskServiceClient(grpcChannel);
             DiagnosticsMessage = $"gRPC trying start with - [{grpcChannel.Target}] address";
             DiagnosticMessageBrush = new SolidColorBrush(Colors.Gray);
+        }
+
+        private async Task CheckForNotifications()
+        {
+            await _settingPageViewModel.GetSettingsFromServer();
+            var activateNotifications = _settingPageViewModel.NotificationCollectionModel
+                .Any(notification => notification.NotificationIsOnModel);
+
+            if (!activateNotifications)
+            {
+                NotificationsIcon = "\uE7ED";
+                NotificationsIconBrush = new SolidColorBrush(Colors.Gray);
+                return;
+            }
+
+            NotificationsIcon = "\uEA8F";
+            NotificationsIconBrush = new SolidColorBrush(Colors.Green);
         }
     }
 }
