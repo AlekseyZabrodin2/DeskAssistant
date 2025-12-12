@@ -97,12 +97,18 @@
                 ScrollViewer.VerticalScrollMode="Enabled"
                 ShowsScrollingPlaceholders="True">
                 <ListView.Header>
-                    <TextBlock
-                        Margin="0,10,0,10"
-                        HorizontalAlignment="Center"
-                        FontSize="18"
-                        FontWeight="Bold"
-                        Text="{Binding LableForTodayTasks}" />
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                        <TextBlock
+                            Margin="0,10"
+                            HorizontalAlignment="Center"
+                            FontSize="18"
+                            FontWeight="Bold"
+                            Text="{Binding LableForTodayTasks}" />
+                        <FontIcon
+                            Margin="160,10,15,10"
+                            Foreground="{Binding NotificationsIconBrush}"
+                            Glyph="{Binding NotificationsIcon}" />
+                    </StackPanel>
                 </ListView.Header>
                 <ListView.ItemTemplate>
                     <DataTemplate>
@@ -250,15 +256,17 @@
                 Orientation="Horizontal"
                 Spacing="5">
                 <Button
-                    Width="65"
+                    Width="50"
                     Background="{Binding EchoDataBaseButtonBrush}"
-                    Command="{Binding GetEchoPgDataBaseCommand}"
-                    Content="PgSQL" />
+                    Command="{Binding GetEchoPgDataBaseCommand}">
+                    <FontIcon Glyph="{Binding DataBaseButtonIcon}" />
+                </Button>
                 <Button
-                    Width="65"
+                    Width="50"
                     Background="{Binding EchoServerButtonBrush}"
-                    Command="{Binding GetEchoGrpcServerCommand}"
-                    Content="gRPC" />
+                    Command="{Binding GetEchoGrpcServerCommand}">
+                    <FontIcon Glyph="{Binding ServerButtonIcon}" />
+                </Button>
                 <Border
                     Width="320"
                     BorderBrush="White"
