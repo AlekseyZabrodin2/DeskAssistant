@@ -4,6 +4,7 @@ using DeskAssistant.Core.Extensions;
 using DeskAssistant.Core.Models;
 using DeskAssistant.Helpers;
 using DeskAssistant.Views;
+using DeskAssistant.WebClient;
 using Grpc.Net.Client;
 using GrpcService;
 using Microsoft.UI;
@@ -268,7 +269,16 @@ namespace DeskAssistant.ViewModels
                 NotificationMessageBrush = new SolidColorBrush(Colors.Red);
                 _logger.Error(NotificationMessage);
             }            
-        }        
+        }
+
+        [RelayCommand]
+        private async Task OpenWebClient()
+        {
+            var customer = new WebBrowser(_logger, _grpcClient);
+            await customer.OrderLunchAsync();
+
+            await GetAllTasksFromDbAsync();
+        }
 
         [RelayCommand]
         private async Task OpenMonthTasks()
