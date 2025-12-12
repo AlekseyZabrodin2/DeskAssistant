@@ -4,7 +4,6 @@ using Microsoft.Playwright;
 using NLog;
 using Polly;
 using System.Text.RegularExpressions;
-using Windows.Storage.Streams;
 
 namespace DeskAssistant.WebClient
 {
