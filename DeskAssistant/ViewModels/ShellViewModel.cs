@@ -17,6 +17,9 @@ namespace DeskAssistant.ViewModels
         public partial string PageTitle { get; set; }
 
         [ObservableProperty]
+        public partial string PageIcon { get; set; }
+
+        [ObservableProperty]
         public partial string PageTag { get; set; }
 
         [ObservableProperty]
@@ -45,7 +48,7 @@ namespace DeskAssistant.ViewModels
             {
                 frame.Navigate(typeof(SettingsPage));
             }
-            else if (pageTag == "CalendarPage")
+            else if (pageTag == "Calendar PlannerPage")
             {
                 using var scope = serviceProvider.CreateScope();
                 var calendarPage = scope.ServiceProvider.GetService<CalendarPage>();
@@ -75,11 +78,13 @@ namespace DeskAssistant.ViewModels
                 NamePagesCollection.Add(new PageModel
                 {
                     Title = pageModel.Title,
+                    IconText = pageModel.IconText,
                     Tag = $"{pageModel.Title}Page",
                     PathToDll = pageModel.PathToDll,
                 });
 
                 PageTitle = pageModel.Title;
+                PageIcon = pageModel.IconText;
                 PageTag = $"{pageModel.Title}Page";
                 PagePathToDll = pageModel.PathToDll;
             }

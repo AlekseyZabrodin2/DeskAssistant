@@ -16,6 +16,9 @@ namespace DeskAssistant.Models
         public partial string Tag { get; set; }
 
         [ObservableProperty]
+        public partial string IconText { get; set; }
+
+        [ObservableProperty]
         public partial string PathToDll { get; set; }
     }
 }

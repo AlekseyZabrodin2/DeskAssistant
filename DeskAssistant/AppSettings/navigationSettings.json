@@ -2,11 +2,13 @@
   "NavigationPages": {
 
     "Page": {
-      "Title": "Calendar"
+        "Title": "Calendar Planner",
+        "IconText": "\uF67B"
     },
     "Page1": {
-      "Title": "Birthday Tracker",
-      "PathToDll": "Some address"
+        "Title": "Birthday Tracker",
+        "IconText": "\uF133",
+        "PathToDll": "Some address"
     }
   }
 }

@@ -37,10 +37,11 @@
             SelectionChanged="NavigationViewControl_SelectionChanged">
             <NavigationView.MenuItemTemplate>
                 <DataTemplate x:DataType="models:PageModel">
-                    <NavigationViewItem
-                        Content="{x:Bind Title}"
-                        Icon="Admin"
-                        Tag="{x:Bind Tag}" />
+                    <NavigationViewItem Content="{x:Bind Title}" Tag="{x:Bind Tag}">
+                        <NavigationViewItem.Icon>
+                            <FontIcon Glyph="{x:Bind IconText}" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
                 </DataTemplate>
 
             </NavigationView.MenuItemTemplate>
