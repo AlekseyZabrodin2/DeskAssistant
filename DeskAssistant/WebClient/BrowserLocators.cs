@@ -26,5 +26,18 @@
 
         // Кнопки заказа
         public readonly string SubmitOrderButton = ".cart-send-a";
+
+        // Кнопки дней недели
+        public readonly string MenuDayOfWeekButton = ".col-md-2.week_days";
+        public readonly string ActiveMenuDayOfWeekButton = ".col-md-2.week_days.active";
+
+        // Меню выбранного дня
+        public readonly string ActiveDayMenuCard = ".menu-classic.bg-menu-1";
+        public readonly string ActiveDayMenuTitle = ".title.h4";
+        public readonly string ListMenuItems = "ul.list-menu";
+        public readonly string MenuItem = ".menu-item.h6";
+        public readonly string PriceBlock = ".text-center";
+        public readonly string MenuItemPrice = ".h6";
+        public readonly string OrderMenuButton = ".btn.btn-shape-circle.btn-burnt-sienna.offset-top-15.add-to-cart-kompleks";
     }
 }
