@@ -38,7 +38,7 @@ namespace DeskAssistant.Views
                 var selectedDate = sender.SelectedDates.First();
                 ViewModel.SelectedDate = DateOnly.FromDateTime(selectedDate.DateTime);
 
-                ViewModel.GetTasksForSelectedDate();
+                ViewModel.GetTasksForSelectedDateAsync();
             }
         }
 
@@ -138,7 +138,7 @@ namespace DeskAssistant.Views
         {
             if (sender is ListView listView && listView.SelectedItem is CalendarTaskModel selectedTask)
             {
-                ViewModel.OpenTaskDetails(selectedTask);
+                _ = ViewModel.OpenTaskDetailsAsync(selectedTask);
             }
         }
     }

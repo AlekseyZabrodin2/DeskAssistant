@@ -107,6 +107,10 @@ namespace DeskAssistant.ViewModels
 
         private readonly SettingPageViewModel _settingPageViewModel;
 
+        [ObservableProperty]
+        public partial string NotificationsTooltipText { get; set; }
+
+
 
         public CalendarViewModel()
         {
@@ -174,7 +178,7 @@ namespace DeskAssistant.ViewModels
                     await _grpcClient.UpdateTaskAsync(request);
 
                     await GetAllTasksFromDbAsync();
-                    await GetTasksForSelectedDate();
+                    await GetTasksForSelectedDateAsync();
                     OnPropertyChanged(nameof(WeekTasks));
                     OnPropertyChanged(nameof(LableForTodayTasks));
                     OnPropertyChanged(nameof(LableForWeekTasks));
@@ -195,8 +199,7 @@ namespace DeskAssistant.ViewModels
                 _loggerHelper.LogEnteringTheMethod();
                 GetWeekPeriodAndSelectedDate();
                 await GetAllTasksFromDbAsync();
-
-                await CheckForNotifications();
+                await CheckForNotificationsAsync();
             }
             catch (Exception ex)
             {
@@ -290,7 +293,7 @@ namespace DeskAssistant.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenWebClient()
+        private async Task OpenWebClientAndOrderLunch()
         {
             var customer = new WebBrowser(_logger, _grpcClient);
             await customer.OrderLunchAsync();
@@ -323,13 +326,13 @@ namespace DeskAssistant.ViewModels
         [RelayCommand]
         private async Task GetEchoGrpcServer()
         {
-            await EchoServer();
+            await EchoServerAsync();
         }
 
         [RelayCommand]
         private async Task GetEchoPgDataBase()
         {
-            await EchoDataBase();
+            await EchoDataBaseAsync();
         }
 
 
@@ -357,8 +360,8 @@ namespace DeskAssistant.ViewModels
                     break;
             }
 
-            _ = EchoDataBase();
-            _ = EchoServer();
+            _ = EchoDataBaseAsync();
+            _ = EchoServerAsync();
 
             return _grpcClient;
         }
@@ -369,12 +372,12 @@ namespace DeskAssistant.ViewModels
 
             try
             {
-                bool getTasks = await GetTasksFromDb();
+                bool getTasks = await GetTasksFromDbAsync();
                 if (!getTasks) 
                     return;
 
                 GetTasksForWeekPeriod();
-                await GetTasksForSelectedDate();
+                await GetTasksForSelectedDateAsync();
 
                 NotificationMessage = "[ Get all tasks successfully ]";
                 NotificationMessageBrush = new SolidColorBrush(Colors.Green);
@@ -387,7 +390,7 @@ namespace DeskAssistant.ViewModels
             }            
         }
 
-        private async Task<bool> GetTasksFromDb()
+        private async Task<bool> GetTasksFromDbAsync()
         {
             if (AllTasks == null)
                 return false;
@@ -452,7 +455,7 @@ namespace DeskAssistant.ViewModels
             WeekPeriod = DateOnly.FromDateTime(DateTime.Today).AddDays(daysUntilSunday);
         }
 
-        public async Task GetTasksForSelectedDate()
+        public async Task GetTasksForSelectedDateAsync()
         {
             _loggerHelper.LogEnteringTheMethod();
 
@@ -566,7 +569,7 @@ namespace DeskAssistant.ViewModels
             }            
         }
 
-        public async Task OpenTaskDetails(CalendarTaskModel task)
+        public async Task OpenTaskDetailsAsync(CalendarTaskModel task)
         {
             var dialogVm = new AddTaskDialogViewModel
             {
@@ -661,7 +664,7 @@ namespace DeskAssistant.ViewModels
             };
         }
 
-        private async Task<bool> EchoServer()
+        private async Task<bool> EchoServerAsync()
         {
             try
             {
@@ -683,7 +686,7 @@ namespace DeskAssistant.ViewModels
             }
         }
 
-        private async Task<bool> EchoDataBase()
+        private async Task<bool> EchoDataBaseAsync()
         {
             try
             {
@@ -758,9 +761,9 @@ namespace DeskAssistant.ViewModels
             DiagnosticMessageBrush = new SolidColorBrush(Colors.Gray);
         }
 
-        private async Task CheckForNotifications()
+        private async Task CheckForNotificationsAsync()
         {
-            await _settingPageViewModel.GetSettingsFromServer();
+            await _settingPageViewModel.GetSettingsFromServerAsync();
             var activateNotifications = _settingPageViewModel.NotificationCollectionModel
                 .Any(notification => notification.NotificationIsOnModel);
 
@@ -770,6 +773,10 @@ namespace DeskAssistant.ViewModels
                 NotificationsIconBrush = new SolidColorBrush(Colors.Gray);
                 return;
             }
+
+            NotificationsTooltipText = string.Empty;
+            var notificationsTime = _settingPageViewModel.NotificationCollectionModel.Select(notif => notif.NotificationTimeModel);
+            NotificationsTooltipText = string.Join("\n", notificationsTime);
 
             NotificationsIcon = "\uEA8F";
             NotificationsIconBrush = new SolidColorBrush(Colors.Green);
