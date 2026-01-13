@@ -69,10 +69,15 @@ namespace DeskAssistant.Views
             var date = DateOnly.FromDateTime(dayItem.Date.DateTime);
 
             bool hasTasks = ViewModel.AllTasks.Any(t => t.DueDate == date && !t.IsCompleted);
+            bool hasBirthdays = ViewModel.BirthdayPeoples.Any(t => DateOnly.FromDateTime(t.Birthday) == date);
 
             var taskDot = FindChild<Ellipse>(dayItem, "TaskDot");
             if (taskDot != null)
                 taskDot.Visibility = hasTasks ? Visibility.Visible : Visibility.Collapsed;
+
+            var birthdayDot = FindChild<Ellipse>(dayItem, "BirthdayDot");
+            if (birthdayDot != null)
+                birthdayDot.Visibility = hasBirthdays ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public static IEnumerable<T> FindChildren<T>(DependencyObject parent) where T : DependencyObject
@@ -99,6 +104,8 @@ namespace DeskAssistant.Views
             bool hasTasks = ViewModel.AllTasks.Any(t =>
                 t.DueDate == date && !t.IsCompleted);
 
+            bool hasBirthdays = ViewModel.BirthdayPeoples.Any(t => DateOnly.FromDateTime(t.Birthday) == date);
+
             // Находим элемент TaskDot в визуальном дереве
             if (args.Phase == 0 && args.Item is CalendarViewDayItem dayItem)
             {
@@ -109,6 +116,19 @@ namespace DeskAssistant.Views
 
                     // Меняем цвет точки по приоритету
                     if (hasTasks)
+                    {
+                        var highPriorityTasks = ViewModel.AllTasks.Any(t =>
+                            t.DueDate == date && !t.IsCompleted);
+                    }
+                }
+
+                var birthdayDot = FindChild<Ellipse>(dayItem, "BirthdayDot");
+                if (birthdayDot != null)
+                {
+                    birthdayDot.Visibility = hasBirthdays ? Visibility.Visible : Visibility.Collapsed;
+
+                    // Меняем цвет точки по приоритету
+                    if (hasBirthdays)
                     {
                         var highPriorityTasks = ViewModel.AllTasks.Any(t =>
                             t.DueDate == date && !t.IsCompleted);
