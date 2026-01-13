@@ -1,8 +1,11 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using BirthdaysGrpcService;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DeskAssistant.Core.Extensions;
 using DeskAssistant.Core.Models;
+using DeskAssistant.Extensions;
 using DeskAssistant.Helpers;
+using DeskAssistant.Models;
 using DeskAssistant.Views;
 using DeskAssistant.WebClient;
 using Grpc.Net.Client;
@@ -24,7 +27,9 @@ namespace DeskAssistant.ViewModels
         public event Action? TasksUpdated;
         private LoggerHelper _loggerHelper = new();
         private TaskService.TaskServiceClient _grpcClient;
+        private BirthdayService.BirthdayServiceClient _birthdayGrpcClient;
         private EnumExtensions _enumExtensions = new();
+        private BirthdayItemExtensions _birthdayExtensions = new();
         private GrpcChannel _serverUrl; 
         private bool _disposed = false;
 
@@ -107,15 +112,23 @@ namespace DeskAssistant.ViewModels
 
         private readonly SettingPageViewModel _settingPageViewModel;
 
+        [ObservableProperty]
+        public partial string NotificationsTooltipText { get; set; }
+
+        public ObservableCollection<BirthdayPeopleModel> BirthdayPeoples { get; set; }
+
+
 
         public CalendarViewModel()
         {
             _grpcClient = GetAppEnvironment();
+            _birthdayGrpcClient = GetAppEnvironmentForBirthdayGrpc();
 
             AllTasks = new();
             MonthTasks = new();
             WeekTasks = new();
             SelectedDayTasks = new();
+            BirthdayPeoples = new();
 
             _settingPageViewModel = new();
 
@@ -174,7 +187,7 @@ namespace DeskAssistant.ViewModels
                     await _grpcClient.UpdateTaskAsync(request);
 
                     await GetAllTasksFromDbAsync();
-                    await GetTasksForSelectedDate();
+                    await GetTasksForSelectedDateAsync();
                     OnPropertyChanged(nameof(WeekTasks));
                     OnPropertyChanged(nameof(LableForTodayTasks));
                     OnPropertyChanged(nameof(LableForWeekTasks));
@@ -193,10 +206,10 @@ namespace DeskAssistant.ViewModels
             try
             {
                 _loggerHelper.LogEnteringTheMethod();
+                await GetBirthdaysFromDbAsync();
                 GetWeekPeriodAndSelectedDate();
                 await GetAllTasksFromDbAsync();
-
-                await CheckForNotifications();
+                await CheckForNotificationsAsync();
             }
             catch (Exception ex)
             {
@@ -290,7 +303,7 @@ namespace DeskAssistant.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenWebClient()
+        private async Task OpenWebClientAndOrderLunch()
         {
             var customer = new WebBrowser(_logger, _grpcClient);
             await customer.OrderLunchAsync();
@@ -323,13 +336,13 @@ namespace DeskAssistant.ViewModels
         [RelayCommand]
         private async Task GetEchoGrpcServer()
         {
-            await EchoServer();
+            await EchoServerAsync();
         }
 
         [RelayCommand]
         private async Task GetEchoPgDataBase()
         {
-            await EchoDataBase();
+            await EchoDataBaseAsync();
         }
 
 
@@ -357,24 +370,51 @@ namespace DeskAssistant.ViewModels
                     break;
             }
 
-            _ = EchoDataBase();
-            _ = EchoServer();
+            _ = EchoDataBaseAsync();
+            _ = EchoServerAsync();
 
             return _grpcClient;
         }
-        
+
+        private BirthdayService.BirthdayServiceClient GetAppEnvironmentForBirthdayGrpc()
+        {
+            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                   ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                   ?? "Production";
+
+            _logger.Info($"Application environment: {environment}");
+
+            switch (environment.ToLower())
+            {
+                case "development":
+                    _serverUrl = _grpcChannelDebug;
+                    LogingAppEnvironmentForBirthdayGrpc(environment, string.Empty, _serverUrl);
+                    break;
+                case "production":
+                    _serverUrl = _grpcChannelRelease;
+                    LogingAppEnvironmentForBirthdayGrpc(environment, string.Empty, _serverUrl);
+                    break;
+                default:
+                    _serverUrl = _grpcChannelRelease;
+                    LogingAppEnvironmentForBirthdayGrpc(environment, "DEFAULT", _serverUrl);
+                    break;
+            }
+
+            return _birthdayGrpcClient;
+        }
+
         private async Task GetAllTasksFromDbAsync()
         {
             _loggerHelper.LogEnteringTheMethod();
 
             try
             {
-                bool getTasks = await GetTasksFromDb();
+                bool getTasks = await GetTasksFromDbAsync();
                 if (!getTasks) 
                     return;
 
                 GetTasksForWeekPeriod();
-                await GetTasksForSelectedDate();
+                await GetTasksForSelectedDateAsync();
 
                 NotificationMessage = "[ Get all tasks successfully ]";
                 NotificationMessageBrush = new SolidColorBrush(Colors.Green);
@@ -387,7 +427,66 @@ namespace DeskAssistant.ViewModels
             }            
         }
 
-        private async Task<bool> GetTasksFromDb()
+        private async Task<bool> GetBirthdaysFromDbAsync()
+        {
+            _loggerHelper.LogEnteringTheMethod();
+
+            if (BirthdayPeoples == null)
+                return false;
+
+            try
+            {
+                BirthdayPeoples.Clear();
+                _logger.Info($"Коллекция всех Дней Рождений очищена");
+
+                var emptyRequest = new BirthdayEmptyRequest();
+                var entities = await _birthdayGrpcClient.GetBirthdaysAsync(emptyRequest);
+                if (!entities.Success)
+                {
+                    _logger.Error(NotificationMessage);
+                    return false;
+                }
+
+                var existingIds = new HashSet<int>();
+
+                foreach (var entity in entities.Birthdays)
+                {
+                    var birthdayPeopleModel = _birthdayExtensions.GrpcBirthdayItemToBirthdaysEntity(entity);
+
+                    if (!existingIds.Contains(birthdayPeopleModel.Id))
+                    {
+                        if (BirthdayPeoples.Any(birthday => birthday.Id == birthdayPeopleModel.Id))
+                        {
+                            _logger.Warn($"❌ ДУБЛИКАТ: Попытка добавить дубликат ДР с номером [{birthdayPeopleModel.Id}] в BirthdayPeoples");
+                            continue;
+                        }
+
+                        BirthdayPeoples.Add(new BirthdayPeopleModel
+                        {
+                            Id = birthdayPeopleModel.Id,
+                            LastName = birthdayPeopleModel.LastName,
+                            Name = birthdayPeopleModel.Name,
+                            MiddleName = birthdayPeopleModel.MiddleName,
+                            Birthday = (DateTime)birthdayPeopleModel.Birthday,
+                            Email = birthdayPeopleModel.Email,
+
+                        });
+                        existingIds.Add(birthdayPeopleModel.Id);
+
+                        _logger.Info($"ДР с номером [{birthdayPeopleModel.Id}] добавлен");
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"[ Can`t get all Birthdays from DB - {ex.InnerException?.Message} ]");
+                return false;
+            }
+        }
+
+        private async Task<bool> GetTasksFromDbAsync()
         {
             if (AllTasks == null)
                 return false;
@@ -452,11 +551,11 @@ namespace DeskAssistant.ViewModels
             WeekPeriod = DateOnly.FromDateTime(DateTime.Today).AddDays(daysUntilSunday);
         }
 
-        public async Task GetTasksForSelectedDate()
+        public async Task GetTasksForSelectedDateAsync()
         {
             _loggerHelper.LogEnteringTheMethod();
 
-            if (AllTasks == null || SelectedDayTasks == null)
+            if (AllTasks == null || SelectedDayTasks == null || BirthdayPeoples == null)
                 return;
 
             SelectedDayTasks.Clear();
@@ -490,6 +589,30 @@ namespace DeskAssistant.ViewModels
                 SelectedDayTasks.Add(task);
                 _logger.Info($"Задача с номером [{task.Id}] добавлена в SelectedDayTasks");
             }
+
+            var birthdaysForDate = BirthdayPeoples
+                .Where(bday => DateOnly.FromDateTime(bday.Birthday) == selectedDate)
+                .ToList();
+
+            foreach (var birthday in birthdaysForDate)
+            {
+                if (SelectedDayTasks.Any(task => task.Id == birthday.Id))
+                {
+                    _logger.Warn($"❌ ДУБЛИКАТ: ДР с номером [{birthday.Id}] уже добавлен в SelectedDayTasks");
+                    continue;
+                }
+
+                SelectedDayTasks.Add(new CalendarTaskModel
+                {
+                    Category = "ДР",
+                    Priority = PrioritiesLevelEnum.Средний,
+                    Id = birthday.Id,
+                    Name = "ДР",
+                    Description = $"День рождения празднует - [{birthday.LastName} {birthday.Name}]"
+                });
+                _logger.Info($"ДР с номером [{birthday.Id}] добавлен в SelectedDayTasks");
+            }
+
 
             DayTasksCount = SelectedDayTasks.Count;
 
@@ -566,7 +689,7 @@ namespace DeskAssistant.ViewModels
             }            
         }
 
-        public async Task OpenTaskDetails(CalendarTaskModel task)
+        public async Task OpenTaskDetailsAsync(CalendarTaskModel task)
         {
             var dialogVm = new AddTaskDialogViewModel
             {
@@ -661,7 +784,7 @@ namespace DeskAssistant.ViewModels
             };
         }
 
-        private async Task<bool> EchoServer()
+        private async Task<bool> EchoServerAsync()
         {
             try
             {
@@ -683,7 +806,7 @@ namespace DeskAssistant.ViewModels
             }
         }
 
-        private async Task<bool> EchoDataBase()
+        private async Task<bool> EchoDataBaseAsync()
         {
             try
             {
@@ -758,9 +881,15 @@ namespace DeskAssistant.ViewModels
             DiagnosticMessageBrush = new SolidColorBrush(Colors.Gray);
         }
 
-        private async Task CheckForNotifications()
+        private void LogingAppEnvironmentForBirthdayGrpc(string environment, string environmentType, GrpcChannel grpcChannel)
         {
-            await _settingPageViewModel.GetSettingsFromServer();
+            _logger.Info($"gRPC client trying to start in {environmentType} [{environment.ToLower()}] environment with - [{grpcChannel.Target}] address");
+            _birthdayGrpcClient = new BirthdayService.BirthdayServiceClient(grpcChannel);
+        }
+
+        private async Task CheckForNotificationsAsync()
+        {
+            await _settingPageViewModel.GetSettingsFromServerAsync();
             var activateNotifications = _settingPageViewModel.NotificationCollectionModel
                 .Any(notification => notification.NotificationIsOnModel);
 
@@ -770,6 +899,10 @@ namespace DeskAssistant.ViewModels
                 NotificationsIconBrush = new SolidColorBrush(Colors.Gray);
                 return;
             }
+
+            NotificationsTooltipText = string.Empty;
+            var notificationsTime = _settingPageViewModel.NotificationCollectionModel.Select(notif => notif.NotificationTimeModel);
+            NotificationsTooltipText = string.Join("\n", notificationsTime);
 
             NotificationsIcon = "\uEA8F";
             NotificationsIconBrush = new SolidColorBrush(Colors.Green);

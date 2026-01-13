@@ -47,7 +47,7 @@
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="CalendarViewDayItem">
-                                        <Grid>
+                                        <StackPanel Orientation="Horizontal" Spacing="1" HorizontalAlignment="Center" >
                                             <!--  Точка под числом  -->
                                             <Ellipse
                                                 x:Name="TaskDot"
@@ -58,7 +58,16 @@
                                                 VerticalAlignment="Bottom"
                                                 Fill="Red"
                                                 Visibility="Collapsed" />
-                                        </Grid>
+                                            <Ellipse
+                                                x:Name="BirthdayDot"
+                                                Width="6"
+                                                Height="6"
+                                                Margin="0,0,0,4"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Bottom"
+                                                Fill="Orange"
+                                                Visibility="Collapsed" />
+                                        </StackPanel>
                                     </ControlTemplate>
                                 </Setter.Value>
                             </Setter>
@@ -76,7 +85,7 @@
                         Content="Добавить задачу" />
                     <Button
                         Margin="5,0"
-                        Command="{Binding OpenWebClientCommand}"
+                        Command="{Binding OpenWebClientAndOrderLunchCommand}"
                         Content="Заказать обед" />
                     <Button
                         Margin="105,0,0,0"
@@ -107,7 +116,11 @@
                         <FontIcon
                             Margin="160,10,15,10"
                             Foreground="{Binding NotificationsIconBrush}"
-                            Glyph="{Binding NotificationsIcon}" />
+                            Glyph="{Binding NotificationsIcon}">
+                            <ToolTipService.ToolTip>
+                                <ToolTip Content="{Binding NotificationsTooltipText}" />
+                            </ToolTipService.ToolTip>
+                        </FontIcon>
                     </StackPanel>
                 </ListView.Header>
                 <ListView.ItemTemplate>

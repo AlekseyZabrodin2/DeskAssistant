@@ -29,7 +29,7 @@ namespace DeskAssistant.Views
 
                 if (dataContext is CalendarTaskModel selectedTask)
                 {
-                    ViewModel.OpenTaskDetails(selectedTask);
+                    _ = ViewModel.OpenTaskDetailsAsync(selectedTask);
                 }
             }
         }

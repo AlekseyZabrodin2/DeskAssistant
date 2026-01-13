@@ -177,7 +177,7 @@ namespace DeskAssistant.ViewModels
 
             _grpcClient = GetAppEnvironment();
 
-            _ = GetSettingsFromServer();
+            _ = GetSettingsFromServerAsync();
 
             SettingsChanged = false;
 
@@ -191,7 +191,7 @@ namespace DeskAssistant.ViewModels
         {
             SettingsChanged = false;
 
-            await SaveNotificationsInDb();
+            await SaveNotificationsInDbAsync();
         }
 
         [RelayCommand(CanExecute = nameof(SettingsChanged))]
@@ -226,7 +226,7 @@ namespace DeskAssistant.ViewModels
             }
         }
 
-        private async Task SaveNotificationsInDb()
+        private async Task SaveNotificationsInDbAsync()
         {
             if (!NotificationIsOn)
             {
@@ -270,7 +270,7 @@ namespace DeskAssistant.ViewModels
             }
         }
 
-        public async Task GetSettingsFromServer()
+        public async Task GetSettingsFromServerAsync()
         {
             var request = new NotificationClientIdRequest();
             request.ClientId = ClientId;
@@ -287,10 +287,16 @@ namespace DeskAssistant.ViewModels
             foreach (var notification in sortedNotifications)
             {
                 var notificationEntity = _notificationExtensions.GrpcNotificationItemToNotificationEntity(notification);
-                NotificationCollection.Add(notificationEntity);
+                if(!NotificationCollection.Any(item => item.Id == notificationEntity.Id))
+                {
+                    NotificationCollection.Add(notificationEntity);
+                }                 
 
                 var notificationModel = NotificationEntityToNotificationCollectionModel(notificationEntity);
-                NotificationCollectionModel.Add(notificationModel);
+                if (!NotificationCollectionModel.Any(item => item.NotificationIdModel == notificationModel.NotificationIdModel))
+                {
+                    NotificationCollectionModel.Add(notificationModel);
+                }
                 notificationModel.IsInitializing = false;
             }
         }
