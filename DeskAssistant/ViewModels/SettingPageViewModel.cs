@@ -41,6 +41,9 @@ namespace DeskAssistant.ViewModels
         [ObservableProperty]
         public partial string NotificationId { get; set; }
 
+        [ObservableProperty]
+        public partial Guid TimerId { get; set; }
+
         public bool NotificationIsOn
         {
             get => _notificationIsOn;
@@ -238,6 +241,7 @@ namespace DeskAssistant.ViewModels
             try
             {
                 NotificationId = $"{NotificationCollection.Count}-{ClientId}_{DateTime.Now:ddMMyyyyHHmmssfff}";
+                TimerId = Guid.NewGuid();
 
                 var settings = _notificationExtensions.SettingsToNotificationEntity(this);
                 var notificationItem = _notificationExtensions.NotificationEntityToNotificationItem(settings);
