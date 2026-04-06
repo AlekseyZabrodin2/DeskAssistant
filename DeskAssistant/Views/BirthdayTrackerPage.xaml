@@ -23,7 +23,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -84,19 +84,19 @@
                 Orientation="Horizontal"
                 Spacing="50">
                 <Button
-                    IsEnabled="{Binding SendButtonsIsEnabled}"
                     Width="150"
                     Height="50"
-                    Command="{Binding SendEmailAboutAllBirthdaysCommand}">
+                    Command="{Binding SendEmailAboutAllBirthdaysCommand}"
+                    IsEnabled="{Binding SendButtonsIsEnabled}">
                     <TextBlock HorizontalTextAlignment="Center" TextWrapping="Wrap">
                         Email about<LineBreak />
                         All Birthdays</TextBlock>
                 </Button>
                 <Button
-                    IsEnabled="{Binding SendButtonsIsEnabled}"
                     Width="150"
                     Height="50"
-                    Command="{Binding SendEmailAboutNextBirthdayCommand}">
+                    Command="{Binding SendEmailAboutNextBirthdayCommand}"
+                    IsEnabled="{Binding SendButtonsIsEnabled}">
                     <TextBlock HorizontalTextAlignment="Center" TextWrapping="Wrap">
                         Email about<LineBreak />
                         next Birthdays</TextBlock>
