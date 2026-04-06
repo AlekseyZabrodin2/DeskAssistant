@@ -5,28 +5,21 @@ using DeskAssistant.Services;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using NLog;
 using System.Collections.ObjectModel;
 
 namespace DeskAssistant.ViewModels
 {
     public partial class BirthdayTrackerViewModel : ObservableObject
     {
-
+        private static readonly ILogger _logger = LogManager.GetCurrentClassLogger();
         public EmailService _emailService;
         IServiceProvider _serviceProvider;
         public BirthdayMessages _birthdayMessages = new();
-
-
-        public BirthdayTrackerViewModel(IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider;
-            _emailService = _serviceProvider.GetRequiredService<EmailService>();
-
-            Initialize();
-        }
-
 
         public ObservableCollection<BirthdayPeopleModel> BirthdayPeoples { get; set; }
 
@@ -45,13 +38,49 @@ namespace DeskAssistant.ViewModels
         [ObservableProperty]
         public partial Visibility GridVisible { get; set; }
 
+        [ObservableProperty]
+        public partial string NotificationMessage { get; set; }
+
+        [ObservableProperty]
+        public partial Brush NotificationMessageBrush { get; set; }
+
+        [ObservableProperty]
+        public partial bool SendButtonsIsEnabled { get; set; }
+
+
+
+        public BirthdayTrackerViewModel(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+            _emailService = _serviceProvider.GetRequiredService<EmailService>();
+
+            Initialize();
+        }
+
+
 
         public void Initialize()
         {
-            string filePath = "Data\\SpisokORPK.docx";
-            ReadTextFromDocx(Path.Combine(AppContext.BaseDirectory, filePath));
+            try
+            {
+                string filePath = "Data\\SpisokORPK.docx";
+                ReadTextFromDocx(Path.Combine(AppContext.BaseDirectory, filePath));
 
-            GetPeoplesWithBirthdayInMonth();
+                GetPeoplesWithBirthdayInMonth();
+
+                SendButtonsIsEnabled = true;
+
+                NotificationMessage = "[ Get Birthday collection ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Green);
+            }
+            catch (Exception ex)
+            {
+                SendButtonsIsEnabled = false;
+
+                NotificationMessage = $"[ {ex?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
+            }
 
             StopBlurEffect();
         }
@@ -203,38 +232,54 @@ namespace DeskAssistant.ViewModels
 
         public async Task SendMessagesRecipientsWithoutBirthday(List<(string Name, string Address)> recipientsList)
         {
-            if (PeoplesWithBirthday.Any())
+            try
             {
-                foreach (var personWithBirthday in PeoplesWithBirthday)
+                if (PeoplesWithBirthday.Any())
                 {
-                    var recipientName = $"{personWithBirthday.LastName} {personWithBirthday.Name}";
-
-                    var recipients = recipientsList.Where(p => p.Name != recipientName).ToList();
-
-                    var subject = "Напоминание о дне рождения 🎉";
-                    var messageBody = _birthdayMessages.GetRandomMessage(personWithBirthday.Name, personWithBirthday.LastName, personWithBirthday.Birthday);
-
-                    if (recipients.Any())
+                    foreach (var personWithBirthday in PeoplesWithBirthday)
                     {
-                        StartBlurEffect();
-                        await _emailService.SendEmailAsync(recipients, subject, messageBody);
-                        StopBlurEffect();
-                    }                        
+                        var recipientName = $"{personWithBirthday.LastName} {personWithBirthday.Name}";
+
+                        var recipients = recipientsList.Where(p => p.Name != recipientName).ToList();
+
+                        var subject = "Напоминание о дне рождения 🎉";
+                        var messageBody = _birthdayMessages.GetRandomMessage(personWithBirthday.Name, personWithBirthday.LastName, personWithBirthday.Birthday);
+
+                        if (recipients.Any())
+                        {
+                            StartBlurEffect();
+                            await _emailService.SendEmailAsync(recipients, subject, messageBody);
+                            StopBlurEffect();
+
+                            NotificationMessage = "[ Send Email ]";
+                            NotificationMessageBrush = new SolidColorBrush(Colors.Green);
+                        }
+                    }
                 }
-            }
-            else
-            {
-                var dialog = new ContentDialog
+                else
                 {
-                    XamlRoot = App.MainWindow.Content.XamlRoot,
-                    Title = "Нет именинников",
-                    Content = "В этом месяце больше никто не празднует день рождения.",
-                    CloseButtonText = "ОК"
+                    var dialog = new ContentDialog
+                    {
+                        XamlRoot = App.MainWindow.Content.XamlRoot,
+                        Title = "Нет именинников",
+                        Content = "В этом месяце больше никто не празднует день рождения.",
+                        CloseButtonText = "ОК"
 
-                };
+                    };
 
-                await dialog.ShowAsync();
+                    await dialog.ShowAsync();
+                }
+
+                SendButtonsIsEnabled = true;
             }
+            catch (Exception ex)
+            {
+                SendButtonsIsEnabled = false;
+
+                NotificationMessage = $"[ {ex?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
+            }            
         }
 
 
@@ -249,36 +294,52 @@ namespace DeskAssistant.ViewModels
 
         private async Task SendEmailRecipientsAboutNextBirthday(List<(string Name, string Address)> recipientsList)
         {
-            if (PeopleNextBirthday != null)
+            try
             {
-                var recipientName = $"{PeopleNextBirthday.LastName} {PeopleNextBirthday.Name}";
-
-                var recipients = recipientsList.Where(p => p.Name != recipientName).ToList();
-
-                var subject = "Напоминание о дне рождения 🎉";
-                var messageBody = _birthdayMessages.GetRandomMessage(PeopleNextBirthday.Name, PeopleNextBirthday.LastName, PeopleNextBirthday.Birthday);
-                var finalMessage = $"{messageBody}" + "\r\nПодходите поздравляйте, не стесняйтесь";
-
-                if (recipients.Any())
+                if (PeopleNextBirthday != null)
                 {
-                    StartBlurEffect();
-                    await _emailService.SendEmailAsync(recipients, subject, finalMessage);
-                    StopBlurEffect();
+                    var recipientName = $"{PeopleNextBirthday.LastName} {PeopleNextBirthday.Name}";
+
+                    var recipients = recipientsList.Where(p => p.Name != recipientName).ToList();
+
+                    var subject = "Напоминание о дне рождения 🎉";
+                    var messageBody = _birthdayMessages.GetRandomMessage(PeopleNextBirthday.Name, PeopleNextBirthday.LastName, PeopleNextBirthday.Birthday);
+                    var finalMessage = $"{messageBody}" + "\r\nПодходите поздравляйте, не стесняйтесь";
+
+                    if (recipients.Any())
+                    {
+                        StartBlurEffect();
+                        await _emailService.SendEmailAsync(recipients, subject, finalMessage);
+                        StopBlurEffect();
+
+                        NotificationMessage = "[ Send Email ]";
+                        NotificationMessageBrush = new SolidColorBrush(Colors.Green);
+                    }
                 }
-            }
-            else
-            {
-                var dialog = new ContentDialog
+                else
                 {
-                    XamlRoot = App.MainWindow.Content.XamlRoot,
-                    Title = "Нет именинников",
-                    Content = "В этом месяце больше никто не празднует день рождения.",
-                    CloseButtonText = "ОК"
+                    var dialog = new ContentDialog
+                    {
+                        XamlRoot = App.MainWindow.Content.XamlRoot,
+                        Title = "Нет именинников",
+                        Content = "В этом месяце больше никто не празднует день рождения.",
+                        CloseButtonText = "ОК"
 
-                };
+                    };
 
-                await dialog.ShowAsync();
+                    await dialog.ShowAsync();
+                }
+
+                SendButtonsIsEnabled = true;
             }
+            catch (Exception ex)
+            {
+                SendButtonsIsEnabled = false;
+
+                NotificationMessage = $"[ Can`t Send Email - {ex?.Message} ]";
+                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
+                _logger.Error(NotificationMessage);
+            }            
         }
 
         private void StartBlurEffect()

@@ -23,12 +23,13 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Grid Grid.RowSpan="3" Visibility="{Binding GridVisible}">
             <Grid.Background>
-                <AcrylicBrush TintColor="White" TintOpacity="0.7" />
+                <AcrylicBrush TintColor="Gray" TintOpacity="0.2" />
             </Grid.Background>
         </Grid>
 
@@ -74,19 +75,16 @@
                     </table:TableView.Columns>
                 </table:TableView>
             </ScrollView>
-            <ProgressRing
-                Width="150"
-                Height="150"
-                IsActive="{Binding ProgressRingIsActive}" />
         </Grid>
         <Grid Grid.Row="2">
             <StackPanel
-                Margin="20"
+                Margin="20,20,20,10"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Bottom"
                 Orientation="Horizontal"
                 Spacing="50">
                 <Button
+                    IsEnabled="{Binding SendButtonsIsEnabled}"
                     Width="150"
                     Height="50"
                     Command="{Binding SendEmailAboutAllBirthdaysCommand}">
@@ -95,6 +93,7 @@
                         All Birthdays</TextBlock>
                 </Button>
                 <Button
+                    IsEnabled="{Binding SendButtonsIsEnabled}"
                     Width="150"
                     Height="50"
                     Command="{Binding SendEmailAboutNextBirthdayCommand}">
@@ -105,5 +104,22 @@
 
             </StackPanel>
         </Grid>
+
+        <Border Grid.Row="3" Grid.ColumnSpan="2">
+            <StackPanel
+                Margin="10"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <TextBlock Margin="0,0,15,0" Text="Notification:" />
+                <TextBlock Foreground="{Binding NotificationMessageBrush}" Text="{Binding NotificationMessage}" />
+            </StackPanel>
+        </Border>
+
+        <ProgressRing
+            Grid.RowSpan="4"
+            Width="150"
+            Height="150"
+            IsActive="{Binding ProgressRingIsActive}" />
+
     </Grid>
 </Page>

@@ -28,6 +28,8 @@ namespace DeskAssistant.Services
 
             try
             {
+                _logger.Info("The sending of the email has started");
+
                 MimeMessage emailMessage = new MimeMessage();
 
                 emailMessage.From.Add(new MailboxAddress(mailSubscriberFrom, emailIdFrom));
