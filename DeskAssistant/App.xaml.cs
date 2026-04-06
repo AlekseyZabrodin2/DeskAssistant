@@ -66,18 +66,19 @@ namespace DeskAssistant
                         var env = context.HostingEnvironment;
                         _logger.Info($"App start with [{env.EnvironmentName}] environment");
 
-                        //config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                        //.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: false, reloadOnChange: true)
-                        //.AddEnvironmentVariables();
-                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/navigationSettings.json"));
-                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/emailServiceSettings.json"));
-                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/encryptionSettings.json"));
+                        config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                        .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: false, reloadOnChange: true)
+                        .AddEnvironmentVariables();
 
-                        // add UserSecrets when Development
-                        if (env.IsDevelopment())
-                        {
-                            config.AddUserSecrets<App>();
-                        }
+                        config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/navigationSettings.json"));
+                        //config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/emailServiceSettings.json"));
+                        //config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "AppSettings/encryptionSettings.json"));
+
+                        //// add UserSecrets when Development
+                        //if (env.IsDevelopment())
+                        //{
+                        //    config.AddUserSecrets<App>();
+                        //}
 
                         config.AddEnvironmentVariables();
                     })
