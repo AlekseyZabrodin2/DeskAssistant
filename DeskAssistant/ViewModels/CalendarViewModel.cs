@@ -124,6 +124,8 @@ namespace DeskAssistant.ViewModels
             _grpcClient = GetAppEnvironment();
             _birthdayGrpcClient = GetAppEnvironmentForBirthdayGrpc();
 
+            _ = DeleteExpiredTasks(15);
+
             AllTasks = new();
             MonthTasks = new();
             WeekTasks = new();
@@ -782,6 +784,61 @@ namespace DeskAssistant.ViewModels
                 Tags = "#default",
                 CreatedDate = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc)
             };
+        }
+
+
+        private async Task<bool> DeleteTaskById(int id)
+        {
+            try
+            {
+                var deleteRequest = new DeleteTaskRequest()
+                {
+                    TaskId = id
+                };
+
+                var response = await _grpcClient.DeleteTaskByIdAsync(deleteRequest);
+
+                if (!response.Success)
+                {
+                    _logger.Error(response.Message);
+                    return false;
+                }
+
+                _logger.Info(response.Message);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                SetErrorServerState(ex);
+                return false;
+            }
+        }
+
+        private async Task<bool> DeleteExpiredTasks(int daysToKeep)
+        {
+            try
+            {
+                var deleteRequest = new DeleteExpiredRequest()
+                {
+                    DaysToKeep = daysToKeep
+                };
+
+                var response = await _grpcClient.DeleteExpiredTasksAsync(deleteRequest);
+
+                if (!response.Success)
+                {
+                    _logger.Error(response.Message);
+                    return false;
+                }
+
+                _logger.Info(response.Message);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+                return false;
+            }
         }
 
         private async Task<bool> EchoServerAsync()
