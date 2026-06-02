@@ -1,6 +1,7 @@
 ﻿using DeskAssistant.Core.Models;
 using DeskAssistant.Models;
 using DeskAssistant.ViewModels;
+using GrpcService;
 using NotificationGrpcClient;
 
 namespace DeskAssistant.Extensions
@@ -13,6 +14,7 @@ namespace DeskAssistant.Extensions
             {
                 Id = notificationEntity.Id.ToString(),
                 ClientId = notificationEntity.ClientId.ToString(),
+                NotificationTaskId = notificationEntity.NotificationTaskId,
                 IsEnabled = notificationEntity.IsEnabled.ToString(),
                 TimerId = notificationEntity.TimerId.ToString(),
                 NotificationTime = notificationEntity.NotificationTime.ToString(),
@@ -33,6 +35,7 @@ namespace DeskAssistant.Extensions
             {
                 Id = notificationItem.Id,
                 ClientId = notificationItem.ClientId,
+                NotificationTaskId = notificationItem.NotificationTaskId,
                 IsEnabled = bool.Parse(notificationItem.IsEnabled),
                 TimerId = Guid.Parse(notificationItem.TimerId),
                 NotificationTime = TimeSpan.Parse(notificationItem.NotificationTime),
@@ -53,6 +56,7 @@ namespace DeskAssistant.Extensions
             {
                 Id = viewModel.NotificationId,
                 ClientId = viewModel.ClientId,
+                NotificationTaskId = viewModel.NotificationId,
                 IsEnabled = viewModel.NotificationIsOn,
                 TimerId = viewModel.TimerId,
                 NotificationTime = viewModel.SelectedTime,
@@ -67,6 +71,30 @@ namespace DeskAssistant.Extensions
             };
         }
 
+        public NotificationEntity CalendarItemToNotificationEntity(string clientId, TaskItem task, Guid timerId)
+        {
+            var createdAt = DateTime.UtcNow;
+            var dayOfWeek = createdAt.DayOfWeek;
+
+            return new NotificationEntity
+            {
+                Id = task.Id,
+                ClientId = clientId,
+                NotificationTaskId = task.Id,
+                IsEnabled = true,
+                TimerId = timerId,
+                NotificationTime = TimeSpan.Parse(task.ReminderTime),
+                MondayEnabled = dayOfWeek == DayOfWeek.Monday,
+                TuesdayEnabled = dayOfWeek == DayOfWeek.Tuesday,
+                WednesdayEnabled = dayOfWeek == DayOfWeek.Wednesday,
+                ThursdayEnabled = dayOfWeek == DayOfWeek.Thursday,
+                FridayEnabled = dayOfWeek == DayOfWeek.Friday,
+                SaturdayEnabled = dayOfWeek == DayOfWeek.Saturday,
+                SundayEnabled = dayOfWeek == DayOfWeek.Sunday,
+                CreatedAt = createdAt
+            };
+        }
+
         public NotificationItemStatus CollectionModelToNotificationItemStatus(NotificationsCollectionModel collectionModel)
         {
             return new NotificationItemStatus
@@ -74,6 +102,16 @@ namespace DeskAssistant.Extensions
                 Id = collectionModel.NotificationIdModel,
                 ClientId = collectionModel.ClientIdModel,
                 IsEnabled = collectionModel.NotificationIsOnModel.ToString()
+            };
+        }
+
+        public NotificationItemStatus CalendarItemToNotificationItemStatus(CalendarTaskModel taskModel)
+        {
+            return new NotificationItemStatus
+            {
+                Id = taskModel.Id,
+                ClientId = "DeskAssistant_Tasks",
+                IsEnabled = taskModel.NotificationIsOn.ToString()
             };
         }
 
