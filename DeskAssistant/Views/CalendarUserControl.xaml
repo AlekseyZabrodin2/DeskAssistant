@@ -47,7 +47,10 @@
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="CalendarViewDayItem">
-                                        <StackPanel Orientation="Horizontal" Spacing="1" HorizontalAlignment="Center" >
+                                        <StackPanel
+                                            HorizontalAlignment="Center"
+                                            Orientation="Horizontal"
+                                            Spacing="1">
                                             <!--  Точка под числом  -->
                                             <Ellipse
                                                 x:Name="TaskDot"
@@ -299,7 +302,7 @@
                 VerticalAlignment="Center"
                 Orientation="Horizontal">
                 <TextBlock Margin="0,0,15,0" Text="Notification:" />
-                <TextBlock Foreground="{Binding NotificationMessageBrush}" Text="{Binding NotificationMessage}" />
+                <TextBlock Foreground="{Binding NotificationMessageBrush}" Text="{Binding NotificationMessageText}" />
             </StackPanel>
         </Border>
     </Grid>
