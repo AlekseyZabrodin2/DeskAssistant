@@ -12,7 +12,7 @@ using System.Collections.ObjectModel;
 
 namespace DeskAssistant.ViewModels
 {
-    public partial class SettingPageViewModel : ObservableObject
+    public partial class SettingPageViewModel : ObservableObject, INotifiable
     {
         private static readonly ILogger _logger = LogManager.GetCurrentClassLogger();
         private NotificationService.NotificationServiceClient _grpcClient;
@@ -160,7 +160,7 @@ namespace DeskAssistant.ViewModels
         public partial string NotificationMessageText { get; set; }
 
         [ObservableProperty]
-        public partial Brush NotificationMessageBrush { get; set; }
+        public partial SolidColorBrush NotificationMessageBrush { get; set; }
 
         [ObservableProperty]
         public partial ObservableCollection<NotificationEntity> NotificationCollection { get; set; }
@@ -171,7 +171,7 @@ namespace DeskAssistant.ViewModels
         [ObservableProperty]
         public partial NotificationsCollectionModel NotificationsCollectionModel {  get; set; }
 
-
+        
 
         public SettingPageViewModel()
         {
@@ -233,9 +233,7 @@ namespace DeskAssistant.ViewModels
         {
             if (!NotificationIsOn)
             {
-                _logger.Info("Уведомления отключены, пропускаем сохранение");
-                SetWarningMessage("Уведомление ВЫКЛЮЧЕНО, пропускаем сохранение");
-
+                _logger.LogAndNotify(this, "Уведомления отключены, пропускаем сохранение", NotificationType.Warning);
                 return;
             }
             try
@@ -250,9 +248,7 @@ namespace DeskAssistant.ViewModels
 
                 if (response.Success)
                 {
-                    _logger.Info($"✅ Уведомление {settings.Id} успешно сохранено");
-
-                    SetSuccessMessage("Уведомление успешно сохранено");
+                    _logger.LogAndNotify(this, $"✅ Уведомление {settings.Id} успешно сохранено", NotificationType.Success);
 
                     // Обновляем локальную коллекцию только при успешном сохранении
                     var notificationEntity = _notificationExtensions.GrpcNotificationItemToNotificationEntity(notificationItem);
@@ -268,9 +264,7 @@ namespace DeskAssistant.ViewModels
             catch (Exception ex)
             {
                 var message = $"{(string.IsNullOrEmpty(ex.InnerException.Message) ? "Ошибка при сохранении уведомления в БД" : ex.InnerException.Message)}";
-
-                SetErrorMessage(message);
-                _logger.Error(message);
+                _logger.LogAndNotify(this, message, NotificationType.Error);
             }
         }
 
@@ -372,24 +366,6 @@ namespace DeskAssistant.ViewModels
         {
             _logger.Info($"gRPC client trying to start in {environmentType} [{environment.ToLower()}] environment with - [{grpcChannel.Target}] address");
             _grpcClient = new NotificationService.NotificationServiceClient(grpcChannel);
-        }
-
-        private void SetSuccessMessage(string message)
-        {
-            NotificationMessageText = $"{message}";
-            NotificationMessageBrush = new SolidColorBrush(Colors.Green);
-        }
-
-        private void SetWarningMessage(string message)
-        {
-            NotificationMessageText = $"{message}";
-            NotificationMessageBrush = new SolidColorBrush(Colors.Orange);
-        }
-
-        private void SetErrorMessage(string message)
-        {
-            NotificationMessageText = $"{message}";
-            NotificationMessageBrush = new SolidColorBrush(Colors.Red);
         }
     }
 }
