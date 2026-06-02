@@ -27,11 +27,26 @@
                     Margin="0,0,10,0"
                     VerticalAlignment="Center"
                     Text="Дата задачи:" />
-                <TextBlock Text="{x:Bind ViewModel.DialogDueDate, Mode=TwoWay}" />
+                <TextBlock VerticalAlignment="Center" Text="{x:Bind ViewModel.DialogDueDate, Mode=TwoWay}" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal">
+                <TimePicker
+                    ClockIdentifier="24HourClock"
+                    Header="Время уведомления"
+                    IsEnabled="True"
+                    Time="{x:Bind ViewModel.NotificationTime, Mode=TwoWay}" />
+
+                <ToggleSwitch
+                    Margin="20,0,10,0"
+                    Header="Статус"
+                    IsOn="{x:Bind ViewModel.NotificationIsOn, Mode=TwoWay}"
+                    OffContent="OFF"
+                    OnContent="ON" />
             </StackPanel>
 
             <ComboBox
-                Width="200"
+                Width="240"
                 Header="Категория"
                 IsHitTestVisible="{x:Bind ViewModel.IsComboBoxDropdown, Mode=TwoWay}"
                 IsTabStop="{x:Bind ViewModel.IsComboBoxDropdown, Mode=TwoWay}"
@@ -39,7 +54,7 @@
                 PlaceholderText="Выберите категорию"
                 SelectedItem="{x:Bind ViewModel.DialogCategory, Mode=TwoWay}" />
             <ComboBox
-                Width="200"
+                Width="240"
                 Header="Приоритет"
                 IsHitTestVisible="{x:Bind ViewModel.IsComboBoxDropdown, Mode=TwoWay}"
                 IsTabStop="{x:Bind ViewModel.IsComboBoxDropdown, Mode=TwoWay}"

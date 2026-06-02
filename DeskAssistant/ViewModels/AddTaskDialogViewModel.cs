@@ -40,6 +40,11 @@ namespace DeskAssistant.ViewModels
 
         public bool CanNotDropdownCanExecute => IsComboBoxDropdown;
 
+        [ObservableProperty]
+        public partial TimeSpan NotificationTime { get; set; }
+
+        [ObservableProperty]
+        public partial bool NotificationIsOn { get; set; }
 
 
 
