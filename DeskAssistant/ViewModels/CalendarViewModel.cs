@@ -14,19 +14,22 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using NLog;
+using NotificationGrpcClient;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
 namespace DeskAssistant.ViewModels
 {
-    public partial class CalendarViewModel : ObservableObject
+    public partial class CalendarViewModel : ObservableObject, INotifiable
     {
         private static readonly ILogger _logger = LogManager.GetCurrentClassLogger();
         private Frame _contentFrame;
         public event Action? TasksUpdated;
-        private LoggerHelper _loggerHelper = new();
+        private LoggerHelper _loggerHelper = new(); 
+        private readonly NotificationItemExtensions _notificationExtensions = new();
         private TaskService.TaskServiceClient _grpcClient;
+        private NotificationService.NotificationServiceClient _grpcNotificationClient;
         private BirthdayService.BirthdayServiceClient _birthdayGrpcClient;
         private EnumExtensions _enumExtensions = new();
         private BirthdayItemExtensions _birthdayExtensions = new();
@@ -64,13 +67,13 @@ namespace DeskAssistant.ViewModels
         public partial DateOnly WeekPeriod { get; set; }
 
         [ObservableProperty]
-        public partial string NotificationMessage { get; set; }
+        public partial string NotificationMessageText { get; set; }
 
         [ObservableProperty]
         public partial string DiagnosticsMessage { get; set; }
 
         [ObservableProperty]
-        public partial Brush NotificationMessageBrush { get; set; }
+        public partial SolidColorBrush NotificationMessageBrush { get; set; }
 
         [ObservableProperty]
         public partial Brush DiagnosticMessageBrush { get; set; }
@@ -117,11 +120,14 @@ namespace DeskAssistant.ViewModels
 
         public ObservableCollection<BirthdayPeopleModel> BirthdayPeoples { get; set; }
 
+        public string _clientId = "DeskAssistant_Tasks";
+
 
 
         public CalendarViewModel()
         {
-            _grpcClient = GetAppEnvironment();
+            _grpcClient = GetAppEnvironmentForTaskGrpc();
+            _grpcNotificationClient = GetAppEnvironmentForNotificationGrpc();
             _birthdayGrpcClient = GetAppEnvironmentForBirthdayGrpc();
 
             _ = DeleteExpiredTasks(15);
@@ -184,9 +190,14 @@ namespace DeskAssistant.ViewModels
 
                     task.CompletedDate = DateTime.UtcNow;
                     task.Status = _enumExtensions.StatusToString(TaskStatusEnum.Completed);
+                    task.NotificationIsOn = !task.IsCompleted;
 
                     var request = CalendarTaskModelToGrpcTask(task);
                     await _grpcClient.UpdateTaskAsync(request);
+
+                    var statusRequest = new NotificationItemStatus();
+                    statusRequest = _notificationExtensions.CalendarItemToNotificationItemStatus(task);
+                    await _grpcNotificationClient.NotificationsSetStatusAsync(statusRequest);
 
                     await GetAllTasksFromDbAsync();
                     await GetTasksForSelectedDateAsync();
@@ -197,9 +208,8 @@ namespace DeskAssistant.ViewModels
             }
             catch (Exception ex)
             {
-                NotificationMessage = $"[ Can`t update property - {ex.InnerException?.Message} ]";
-                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
-                _logger.Error(NotificationMessage);
+                var message = $"[ Can`t update property - {ex.InnerException?.Message} ]";
+                _logger.LogAndNotify(this, message, NotificationType.Error);
             }
         }
 
@@ -224,6 +234,17 @@ namespace DeskAssistant.ViewModels
         {
             try
             {
+                var requestNotification = new NotificationClientIdRequest();
+                requestNotification.ClientId = _clientId;
+
+                var notificationList = await _grpcNotificationClient.NotificationsGetSettingsAsync(requestNotification);
+                if (!notificationList.Success)
+                    return;
+
+                var taskId = $"{notificationList.Notification.Count}-{"Tasks"}_{DateTime.Now:ddMMyyyyHHmmssfff}";
+                var id = notificationList.Notification.Count.ToString();
+
+
                 var dialogVm = new AddTaskDialogViewModel
                 {
                     DialogDueDate = SelectedDate
@@ -247,10 +268,12 @@ namespace DeskAssistant.ViewModels
                     var vm = dialogControl.ViewModel;
                     var newTask = new CalendarTaskEntity
                     {
+                        Id = taskId,
                         Name = vm.DialogName,
                         Description = vm.DialogDescription,
                         CreatedDate = DateTime.UtcNow,
                         DueDate = vm.DialogDueDate,
+                        ReminderTime = vm.NotificationTime,
                         Priority = vm.DialogPriority == 0 ? PrioritiesLevelEnum.Низкий : vm.DialogPriority,
                         Category = vm.DialogCategory == null ? "Разное" : vm.DialogCategory,
                         IsCompleted = false,
@@ -276,10 +299,13 @@ namespace DeskAssistant.ViewModels
 
                     var request = new TaskItem
                     {
+                        Id = taskId,
                         Name = newTask.Name ?? "",
                         Description = newTask.Description ?? "",
                         CreatedDate = newTask.CreatedDate.ToString() ?? "",
                         DueDate = newTask.DueDate.ToString("dd.MM.yyyy") ?? "",
+                        ReminderTime = newTask.ReminderTime.ToString() ?? "",
+                        IsNotificationOn = vm.NotificationIsOn.ToString() ?? "",
                         Priority = _enumExtensions.PrioritiesLevelToString(newTask.Priority) ?? "",
                         Category = newTask.Category ?? "",
                         IsCompleted = newTask.IsCompleted.ToString() ?? "",
@@ -291,16 +317,20 @@ namespace DeskAssistant.ViewModels
                     await _grpcClient.CreateTaskAsync(request);
                     await GetAllTasksFromDbAsync();
 
-                    NotificationMessage = "[ Task create successfully ]";
-                    NotificationMessageBrush = new SolidColorBrush(Colors.Green);
+                    if (vm.NotificationIsOn)
+                    {
+                        await SaveNotificationsInDbAsync(request);
+                    }
+
+                    var message = "[ Task create successfully ]";
+                    _logger.LogAndNotify(this, message, NotificationType.Info);
                 }
                 TasksUpdated?.Invoke();
             }
             catch (Exception ex)
             {
-                NotificationMessage = $"[ Can`t create task - {ex.InnerException?.Message} ]";
-                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
-                _logger.Error(NotificationMessage);
+                var message = $"[ Can`t create task - {ex.InnerException?.Message} ]";
+                _logger.LogAndNotify(this, message, NotificationType.Error);
             }            
         }
 
@@ -347,8 +377,7 @@ namespace DeskAssistant.ViewModels
             await EchoDataBaseAsync();
         }
 
-
-        private TaskService.TaskServiceClient GetAppEnvironment()
+        private TaskService.TaskServiceClient GetAppEnvironmentForTaskGrpc()
         {
             var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
                    ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
@@ -376,6 +405,33 @@ namespace DeskAssistant.ViewModels
             _ = EchoServerAsync();
 
             return _grpcClient;
+        }
+
+        private NotificationService.NotificationServiceClient GetAppEnvironmentForNotificationGrpc()
+        {
+            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                   ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                   ?? "Production";
+
+            _logger.Info($"Application environment: {environment}");
+
+            switch (environment.ToLower())
+            {
+                case "development":
+                    _serverUrl = _grpcChannelDebug;
+                    LogingAppEnvironmentForNotificationGrpc(environment, string.Empty, _serverUrl);
+                    break;
+                case "production":
+                    _serverUrl = _grpcChannelRelease;
+                    LogingAppEnvironmentForNotificationGrpc(environment, string.Empty, _serverUrl);
+                    break;
+                default:
+                    _serverUrl = _grpcChannelRelease;
+                    LogingAppEnvironmentForNotificationGrpc(environment, "DEFAULT", _serverUrl);
+                    break;
+            }
+
+            return _grpcNotificationClient;
         }
 
         private BirthdayService.BirthdayServiceClient GetAppEnvironmentForBirthdayGrpc()
@@ -418,14 +474,13 @@ namespace DeskAssistant.ViewModels
                 GetTasksForWeekPeriod();
                 await GetTasksForSelectedDateAsync();
 
-                NotificationMessage = "[ Get all tasks successfully ]";
-                NotificationMessageBrush = new SolidColorBrush(Colors.Green);
+                var message = "[ Get all tasks successfully ]"; 
+                _logger.LogAndNotify(this, message, NotificationType.Info);
             }
             catch (Exception ex)
             {
-                NotificationMessage = $"[ Can`t get all tasks from DB - {ex.InnerException?.Message} ]";
-                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
-                _logger.Error(NotificationMessage);
+                var message = $"[ Can`t get all tasks from DB - {ex.InnerException?.Message} ]";
+                _logger.LogAndNotify(this, message, NotificationType.Error);
             }            
         }
 
@@ -445,7 +500,7 @@ namespace DeskAssistant.ViewModels
                 var entities = await _birthdayGrpcClient.GetBirthdaysAsync(emptyRequest);
                 if (!entities.Success)
                 {
-                    _logger.Error(NotificationMessage);
+                    _logger.LogAndNotify(this, entities.Message, NotificationType.Error);
                     return false;
                 }
 
@@ -502,13 +557,12 @@ namespace DeskAssistant.ViewModels
                 var entities = await _grpcClient.GetAllTasksAsync(emptyRequest);
                 if (!entities.Success)
                 {
-                    NotificationMessage = $"[ {entities?.Message} ]";
-                    NotificationMessageBrush = new SolidColorBrush(Colors.Red);
-                    _logger.Error(NotificationMessage);
+                    var message = $"[ {entities?.Message} ]";
+                    _logger.LogAndNotify(this, message, NotificationType.Error);
                     return false;
                 }
 
-                var existingIds = new HashSet<int>();
+                var existingIds = new HashSet<string>();
 
                 foreach (var entity in entities.Tasks)
                 {
@@ -535,9 +589,8 @@ namespace DeskAssistant.ViewModels
             }
             catch (Exception ex)
             {
-                NotificationMessage = $"[ Can`t get all tasks from DB - {ex.InnerException?.Message} ]";
-                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
-                _logger.Error(NotificationMessage);
+                var message = $"[ Can`t get all tasks from DB - {ex.InnerException?.Message} ]";
+                _logger.LogAndNotify(this, message, NotificationType.Error);
 
                 return false;
             }            
@@ -598,7 +651,7 @@ namespace DeskAssistant.ViewModels
 
             foreach (var birthday in birthdaysForDate)
             {
-                if (SelectedDayTasks.Any(task => task.Id == birthday.Id))
+                if (SelectedDayTasks.Any(task => task.Id == birthday.Id.ToString()))
                 {
                     _logger.Warn($"❌ ДУБЛИКАТ: ДР с номером [{birthday.Id}] уже добавлен в SelectedDayTasks");
                     continue;
@@ -608,7 +661,7 @@ namespace DeskAssistant.ViewModels
                 {
                     Category = "ДР",
                     Priority = PrioritiesLevelEnum.Средний,
-                    Id = birthday.Id,
+                    Id = birthday.Id.ToString(),
                     Name = "ДР",
                     Description = $"День рождения празднует - [{birthday.LastName} {birthday.Name}]"
                 });
@@ -685,9 +738,8 @@ namespace DeskAssistant.ViewModels
             }
             catch (Exception ex)
             {
-                NotificationMessage = $"[ Error checking expired tasks - {ex.InnerException?.Message} ]";
-                NotificationMessageBrush = new SolidColorBrush(Colors.Red);
-                _logger.Error(NotificationMessage);
+                var message = $"[ Error checking expired tasks - {ex.InnerException?.Message} ]";
+                _logger.LogAndNotify(this, message, NotificationType.Error);
             }            
         }
 
@@ -727,6 +779,7 @@ namespace DeskAssistant.ViewModels
                 DueDate = model.DueDate.ToString("dd.MM.yyyy"),
                 IsCompleted = model.IsCompleted.ToString(),
                 Priority = _enumExtensions.PrioritiesLevelToString(model.Priority),
+                IsNotificationOn = model.NotificationIsOn.ToString(),
                 Category = model.Category,
                 Status = model.Status,
                 Tags = model.Tags,
@@ -750,18 +803,19 @@ namespace DeskAssistant.ViewModels
 
             return new CalendarTaskModel
             {
-                Id = string.IsNullOrEmpty(entity.Id) ? 0 : int.Parse(entity.Id),
+                Id = string.IsNullOrEmpty(entity.Id) ? string.Empty : entity.Id,
                 Name = entity.Name,
                 Description = entity.Description,
                 DueDate = string.IsNullOrEmpty(entity.DueDate) ? DateOnly.FromDateTime(DateTime.Now) : DateOnly.Parse(entity.DueDate),
                 IsCompleted = entity.IsCompleted == null ? false : bool.Parse(entity.IsCompleted),
+                NotificationIsOn = entity.IsNotificationOn == null ? false : bool.Parse(entity.IsNotificationOn),
                 Priority = _enumExtensions.PrioritiesLevelFromString(entity.Priority),
                 Category = entity.Category,
                 Status = entity.Status,
                 Tags = entity.Tags,
                 CreatedDate = entity.CreatedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CreatedDate), DateTimeKind.Utc),
                 DueTime = entity.DueTime == "" ? null : TimeSpan.Parse(entity.DueTime),
-                ReminderTime = entity.ReminderTime == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.ReminderTime), DateTimeKind.Utc),
+                ReminderTime = TimeSpan.Parse(entity.ReminderTime),
                 CompletedDate = entity.CompletedDate == "" ? null : DateTime.SpecifyKind(DateTime.Parse(entity.CompletedDate), DateTimeKind.Utc),
                 IsRecurring = string.IsNullOrEmpty(entity.IsRecurring) ? false : bool.Parse(entity.IsRecurring),
                 RecurrencePattern = entity.RecurrencePattern,
@@ -773,7 +827,7 @@ namespace DeskAssistant.ViewModels
         {
             return new CalendarTaskModel
             {
-                Id = 0,
+                Id = "New Id Task",
                 Name = "Default Task",
                 Description = "Default description",
                 DueDate = DateOnly.FromDateTime(DateTime.Today),
@@ -787,7 +841,7 @@ namespace DeskAssistant.ViewModels
         }
 
 
-        private async Task<bool> DeleteTaskById(int id)
+        private async Task<bool> DeleteTaskById(string id)
         {
             try
             {
@@ -944,6 +998,12 @@ namespace DeskAssistant.ViewModels
             _birthdayGrpcClient = new BirthdayService.BirthdayServiceClient(grpcChannel);
         }
 
+        private void LogingAppEnvironmentForNotificationGrpc(string environment, string environmentType, GrpcChannel grpcChannel)
+        {
+            _logger.Info($"gRPC client trying to start in {environmentType} [{environment.ToLower()}] environment with - [{grpcChannel.Target}] address");
+            _grpcNotificationClient = new NotificationService.NotificationServiceClient(grpcChannel);
+        }
+
         private async Task CheckForNotificationsAsync()
         {
             await _settingPageViewModel.GetSettingsFromServerAsync();
@@ -963,6 +1023,29 @@ namespace DeskAssistant.ViewModels
 
             NotificationsIcon = "\uEA8F";
             NotificationsIconBrush = new SolidColorBrush(Colors.Green);
+        }
+
+        private async Task SaveNotificationsInDbAsync(TaskItem task)
+        {
+            try
+            {                
+                var timerId = Guid.NewGuid();
+
+                var settings = _notificationExtensions.CalendarItemToNotificationEntity(_clientId, task, timerId);
+                var notificationItem = _notificationExtensions.NotificationEntityToNotificationItem(settings);
+
+                var response = await _grpcNotificationClient.NotificationsCreateAsync(notificationItem);
+
+                if (response.Success)
+                {
+                    _logger.LogAndNotify(this, $"✅ Уведомление {settings.Id} успешно сохранено", NotificationType.Success);
+                }
+            }
+            catch (Exception ex)
+            {
+                var message = $"{(string.IsNullOrEmpty(ex.InnerException.Message) ? "Ошибка при сохранении уведомления в БД" : ex.InnerException.Message)}";
+                _logger.LogAndNotify(this, message, NotificationType.Error);
+            }
         }
     }
 }
